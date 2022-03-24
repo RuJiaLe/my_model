@@ -32,7 +32,8 @@ import torch
 # a = {'a': 0, 'b': 2}
 # print(a['b'])
 
-for i in range(10):
-    print(i)
-    if i == 5:
-        break
+# for i in range(10):
+#     print(i)
+#     if i == 5:
+#         break
+print(torch.__version__)
