@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="final2" />
+    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="final3">
+      <change afterPath="$PROJECT_DIR$/pre_train_new.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dataset/dataload.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataset/dataload.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/evaluation.py" beforeDir="false" afterPath="$PROJECT_DIR$/evaluation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pre_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/pre_train_old.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -26,7 +34,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../DCFNet" />
     <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
-  <component name="RunManager" selected="Python.predict">
+  <component name="RunManager" selected="Python.test">
     <configuration name="evaluation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="my_model" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -134,9 +142,9 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test" />
         <item itemvalue="Python.predict" />
         <item itemvalue="Python.evaluation" />
-        <item itemvalue="Python.test" />
         <item itemvalue="Python.pre_predict" />
         <item itemvalue="Python.train" />
       </list>
@@ -207,7 +215,14 @@
       <option name="project" value="LOCAL" />
       <updated>1648115233265</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="final3">
+      <created>1648115330798</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1648115330798</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -229,6 +244,7 @@
     <MESSAGE value="test" />
     <MESSAGE value="final" />
     <MESSAGE value="final2" />
-    <option name="LAST_COMMIT_MESSAGE" value="final2" />
+    <MESSAGE value="final3" />
+    <option name="LAST_COMMIT_MESSAGE" value="final3" />
   </component>
 </project>

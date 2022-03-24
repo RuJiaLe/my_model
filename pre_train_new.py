@@ -3,10 +3,10 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 import argparse
-from dataset.dataload import VideoDataset
+from dataset.dataload import ImageDataset
 from dataset.transforms import get_train_transforms, get_transforms
 from torch.utils.data import DataLoader
-from model.train_model import Video_Encoder_Model, Video_Decoder_Model
+from model.pre_train_model import Video_Encoder_Model, Video_Decoder_Model
 import torch.optim as optim
 from utils import adjust_lr, Eval_mae, Eval_F_measure, Eval_E_measure, Eval_S_measure
 from datetime import datetime
@@ -23,16 +23,14 @@ parser.add_argument('--size', type=int, default=256, help='training dataset size
 parser.add_argument('--clip', type=float, default=0.5, help='gradient clipping margin')
 parser.add_argument('--decay_rate', type=float, default=0.9, help='decay rate of learning rate')
 parser.add_argument('--decay_epoch', type=int, default=15, help='every n epochs decay learning rate')
-parser.add_argument('--save_model', type=str, default="./save_models/train_model", help='save_Encoder_model_path')
-parser.add_argument('--load_train_model', type=bool, default=False, help='load_model')
-parser.add_argument('--load_pre_train_model', type=bool, default=False, help='load_model')
-parser.add_argument('--dataset', type=list, default=["DAVIS", "DAVSOD"], help='dataset')
+parser.add_argument('--save_model', type=str, default="./save_models/pretrain_model", help='save_Encoder_model_path')
+parser.add_argument('--load_model', type=bool, default=False, help='load_model')
 parser.add_argument('--log_dir', type=str, default="./Log_file", help="log_dir file")
 
 args = parser.parse_args()
 
 # log
-logging.basicConfig(filename=args.log_dir + '/train_log.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]', level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
+logging.basicConfig(filename=args.log_dir + '/pre_train_log.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]', level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
 
 # 模型加载
 if torch.cuda.is_available():
@@ -43,31 +41,13 @@ else:
 Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=True)
 Decoder_Model = Video_Decoder_Model()
 
-# 加载预训练模型
-if args.load_pre_train_model:
-    Encoder_path = "./save_models/pretrain_model/pre_encoder_model_15.pth"
-    Decoder_path = "./save_models/pretrain_model/pre_decoder_model_15.pth"
-    print('Loading state dict from: {}'.format(Encoder_path))
-
-    Encoder_Model.load_state_dict(torch.load(Encoder_path, map_location=torch.device(device)))
-    Decoder_dict = Decoder_Model.state_dict()
-    pre_trained_dict = torch.load(Decoder_path, map_location=torch.device(device))
-
-    for k, v in pre_trained_dict.items():
-        if k in Decoder_dict:
-            print("load:%s" % k)
-    pre_trained_dict = {k: v for k, v in pre_trained_dict.items() if (k in Decoder_dict)}
-    Decoder_dict.update(pre_trained_dict)
-    Decoder_Model.load_state_dict(Decoder_dict)
-    print('Loading Decoder_Model state dick done!!!')
-
 # 加载训练模型
-if args.load_train_model:
-    Encoder_path = args.save_model + "/encoder_model_15.pth"
-    Decoder_path = args.save_model + "/decoder_model_15.pth"
-    print('Loading state dict from: {}'.format(Encoder_path))
+if args.load_model:
+    Encoder_path = args.save_model + "/pre_encoder_model_15.pth"
+    Decoder_path = args.save_model + "/pre_decoder_model_15.pth"
+    print('Loading state dict from: {0}'.format(Encoder_path))
     Encoder_Model.load_state_dict(torch.load(Encoder_path, map_location=torch.device(device)))
-    print('Loading state dict from: {}'.format(Decoder_path))
+    print('Loading state dict from: {0}'.format(Decoder_path))
     Decoder_Model.load_state_dict(torch.load(Decoder_path, map_location=torch.device(device)))
 
 if torch.cuda.is_available():
@@ -272,8 +252,8 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
             best_model['e_model'] = encoder_model.state_dict()
             best_model['d_model'] = decoder_model.state_dict()
         else:
-            torch.save(best_model['e_model'], args.save_model + '/best_encoder_model.pth')
-            torch.save(best_model['d_model'], args.save_model + '/best_decoder_model.pth')
+            torch.save(best_model['e_model'], args.save_model + '/best_pre_encoder_model.pth')
+            torch.save(best_model['d_model'], args.save_model + '/best_pre_decoder_model.pth')
             logging.info('best_model_Epoch'.format(Epoch))
             print('find best model!!!')
             return True
@@ -281,25 +261,25 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
     # 模型保存
     if Epoch % 10 == 0:
         torch.save(encoder_model.state_dict(),
-                   args.save_model + '/encoder_model' + '_%d' % (Epoch + 0) + '.pth')
+                   args.save_model + '/pre_encoder_model' + '_%d' % (Epoch + 0) + '.pth')
         torch.save(decoder_model.state_dict(),
-                   args.save_model + '/decoder_model' + '_%d' % (Epoch + 0) + '.pth')
+                   args.save_model + '/pre_decoder_model' + '_%d' % (Epoch + 0) + '.pth')
 
 
 if __name__ == '__main__':
     print("start training!!!")
     # 数据加载
     # train data load
-    train_transforms = get_train_transforms(input_size=(args.size, args.size))
-    train_dataset = VideoDataset(root_dir="./train_data", training_set_list=args.dataset, training=True,
-                                 transforms=train_transforms)
-    train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=True, drop_last=True)
+    pre_train_transforms = get_train_transforms(input_size=(args.size, args.size))
+    pre_train_dataset = ImageDataset(root_dir="./pre_train_data", training_set_list=['DUTS'],
+                                     image_transform=pre_train_transforms)
+    pre_train_dataloader = DataLoader(dataset=pre_train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=True, drop_last=True)
 
     # val data load
-    val_transforms = get_transforms(input_size=(args.size, args.size))
-    val_dataset = VideoDataset(root_dir="./val_data", training_set_list=["DAVSOD"], training=True,
-                               transforms=val_transforms)
-    val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
+    pre_val_transforms = get_transforms(input_size=(args.size, args.size))
+    pre_val_dataset = ImageDataset(root_dir="./pre_val_data", training_set_list=["DUTS"],
+                                   image_transform=pre_val_transforms)
+    pre_val_dataloader = DataLoader(dataset=pre_val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
     best_model = {"loss": 0, 'e_model': Encoder_Model.state_dict(), 'd_model': Decoder_Model.state_dict()}
     flag = False
@@ -308,7 +288,7 @@ if __name__ == '__main__':
         adjust_lr(optimizer_Encoder, epoch, args.decay_rate, args.decay_epoch)
         adjust_lr(optimizer_Decoder, epoch, args.decay_rate, args.decay_epoch)
 
-        flag = train(train_dataloader, val_dataloader, Encoder_Model, Decoder_Model, optimizer_Encoder, optimizer_Decoder, epoch)
+        flag = train(pre_train_dataloader, pre_val_dataloader, Encoder_Model, Decoder_Model, optimizer_Encoder, optimizer_Decoder, epoch)
         if flag:
             break
 

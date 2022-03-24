@@ -51,8 +51,10 @@ def Eval(dataset, dataloader):
             S_measure = Eval_S_measure(predict, gt)
             S_measures += S_measure
 
-            print('dataset: {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.format(dataset, (img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
-            logging.info('dataset: {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.format(dataset, (img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
+            print('dataset: {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
+                  format(dataset, (img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
+            logging.info('dataset: {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
+                         format(dataset, (img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
 
     avg_mae = MAES / img_num
 

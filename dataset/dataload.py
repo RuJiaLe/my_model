@@ -58,18 +58,9 @@ class VideoDataset(Dataset):
 
     def get_frame(self, frame_info):
         image_path = frame_info["image_path"]
-
         image = Image.open(image_path).convert("RGB")
-        image_size = image.size[:2]
-
-        if self.training:
-            gt_path = frame_info["gt_path"]
-
-            gt = Image.open(gt_path).convert("L")
-
-        else:
-            gt = None
-
+        gt_path = frame_info["gt_path"]
+        gt = Image.open(gt_path).convert("L")
         sample = {"image": image, "gt": gt, "path": image_path}
 
         return sample
@@ -78,8 +69,6 @@ class VideoDataset(Dataset):
         frame = self.frames[idx]
 
         frame_output = []
-        if self.training and random.randint(0, 1):
-            frame = frame[::-1]
 
         for i in range(len(frame)):
             item = self.get_frame(frame[i])
@@ -135,12 +124,8 @@ class ImageDataset(Dataset):
 
     def get_image(self, image_info):
         image_path = image_info["image_path"]
-
         image = Image.open(image_path).convert("RGB")
-        image_size = image.size[:2]
-
         gt_path = image_info["gt_path"]
-
         gt = Image.open(gt_path).convert("L")
 
         sample = {"image": image, "gt": gt, "path": image_path}
