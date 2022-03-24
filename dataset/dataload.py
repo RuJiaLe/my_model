@@ -164,11 +164,11 @@ class ImageDataset(Dataset):
         return len(self.lists)
 
 
-# val_data load
-class ValDataset(Dataset):
+# Eval_data load
+class EvalDataset(Dataset):
     def __init__(self, root_dir="./predict_data/", training_set_list=[], video_clip=4, time_interval=1,
                  training=True, transforms=None):
-        super(ValDataset, self).__init__()
+        super(EvalDataset, self).__init__()
 
         self.root_dir = root_dir
         self.video_clip = video_clip

@@ -5,10 +5,10 @@ from torchvision.transforms import functional as F
 from torchvision.transforms import InterpolationMode
 
 
-def get_val_transforms(input_size):
+def get_Eval_transforms(input_size):
     return transforms.Compose([
-        Val_Resize(input_size),
-        Val_ToTensor()
+        Eval_Resize(input_size),
+        Eval_ToTensor()
     ])
 
 
@@ -85,7 +85,7 @@ class Resize(object):
         return samples
 
 
-class Val_Resize(object):
+class Eval_Resize(object):
     """ Resize PIL image use both for training and inference"""
 
     def __init__(self, size):
@@ -125,7 +125,7 @@ class ToTensor(object):
         return samples
 
 
-class Val_ToTensor(object):
+class Eval_ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, samples):

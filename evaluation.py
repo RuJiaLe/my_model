@@ -2,37 +2,37 @@ import os
 import torch
 from torch.autograd import Variable
 import argparse
-from dataset.dataload import ValDataset
-from dataset.transforms import get_val_transforms
+from dataset.dataload import EvalDataset
+from dataset.transforms import get_Eval_transforms
 from torch.utils.data import DataLoader
 from utils import Eval_mae, Eval_F_measure, Eval_E_measure, Eval_S_measure
 import logging
-from datetime import datetime
+import time
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--batch_size', type=int, default=1, help='training batch size')
 parser.add_argument('--size', type=int, default=256, help='training dataset size')
 parser.add_argument('--clip', type=float, default=0.5, help='gradient clipping margin')
-parser.add_argument('--predict_data_path', type=str, default="./predict_data", help='predict_data_path')
-parser.add_argument('--datasets', type=list, default=["DAVIS", "DAVSOD", "DAVSOD_D", "DAVSOD_E", "DAVSOD_N", "SegTrackV2", "UVSD"], help='datasets')
+parser.add_argument('--predict_data_path', type=str, default="./test_predict_data", help='predict_data_path')
+parser.add_argument('--datasets', type=list, default=["DAVIS"], help='datasets')
 parser.add_argument('--log_dir', type=str, default="./Log_file", help="log_dir file")
 
 args = parser.parse_args()
 
-for i in range(len(args.datasets)):
-    logging.basicConfig(filename=args.log_dir + '/val_log_34th.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]', level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
+logging.basicConfig(filename=args.log_dir + '/val_log_34th.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]', level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
 
-    # 数据加载
-    transforms = get_val_transforms(input_size=(args.size, args.size))
-    dataset = ValDataset(root_dir=args.predict_data_path, training_set_list=[args.datasets[i]], training=False,
-                         transforms=transforms)
-    Val_dataloader = DataLoader(dataset=dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
-    MAES, F_measures, E_measures, S_measures = [], [], [], []
+def Eval(dataset, dataloader):
+    total_num = len(dataloader) * 4
+    MAES, E_measures, S_measures = 0.0, 0.0, 0.0
+    img_num = 0
+    avg_p, avg_r = 0.0, 0.0
 
-    for j, packs in enumerate(Val_dataloader):
+    start_time = time.time()
+    for j, packs in enumerate(dataloader):
         for pack in packs:
+            img_num = img_num + 1
             predict, gt = pack['predict'], pack['gt']
             if torch.cuda.is_available():
                 predict, gt = Variable(predict.cuda(), requires_grad=False), Variable(gt.cuda(), requires_grad=False)
@@ -40,45 +40,50 @@ for i in range(len(args.datasets)):
                 predict, gt = Variable(predict, requires_grad=False), Variable(gt, requires_grad=False)
 
             mae = Eval_mae(predict, gt)
-            F_measure = Eval_F_measure(predict, gt)
+            MAES += mae
+
+            prec, recall = Eval_F_measure(predict, gt)
+            avg_p += prec
+            avg_r += recall
+
             E_measure = Eval_E_measure(predict, gt)
+            E_measures += E_measure
             S_measure = Eval_S_measure(predict, gt)
+            S_measures += S_measure
 
-            MAES.append(mae)
-            F_measures.append(F_measure)
-            E_measures.append(E_measure)
-            S_measures.append(S_measure)
+            print('dataset: {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.format(dataset, (img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
+            logging.info('dataset: {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.format(dataset, (img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
 
-            print('dataset: {}, mae: {:0.4f}, F_measure: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.format(args.datasets[i], mae, F_measure, E_measure, S_measure))
-            logging.info('dataset: {}, mae: {:0.4f}, F_measure: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.format(args.datasets[i], mae, F_measure, E_measure, S_measure))
+    avg_mae = MAES / img_num
 
-    avg_mae = torch.mean(torch.tensor(MAES))
-    avg_F_measure = torch.mean(torch.tensor(F_measures))
-    avg_E_measure = torch.mean(torch.tensor(E_measures))
-    avg_S_measure = torch.mean(torch.tensor(S_measures))
+    beta2 = 0.3
+    avg_p = avg_p / img_num
+    avg_r = avg_r / img_num
+    score = (1 + beta2) * avg_p * avg_r / (beta2 * avg_p + avg_r)
+    score[score != score] = 0
+    max_F_measure = score.max()
 
-    max_mae = torch.max(torch.tensor(MAES))
-    max_F_measure = torch.max(torch.tensor(F_measures))
-    max_E_measure = torch.max(torch.tensor(E_measures))
-    max_S_measure = torch.max(torch.tensor(S_measures))
+    avg_E_measure = E_measures / img_num
+    avg_S_measure = S_measures / img_num
 
-    min_mae = torch.min(torch.tensor(MAES))
-    min_F_measure = torch.min(torch.tensor(F_measures))
-    min_E_measure = torch.min(torch.tensor(E_measures))
-    min_S_measure = torch.min(torch.tensor(S_measures))
+    end_time = time.time()
+    speed = end_time - start_time
 
-    print('dataset: {}, avg_mae: {:0.4f}, avg_F_measure: {:0.4f}, avg_E_measure: {:0.4f}, avg_S_measure: {:0.4f}'.
-          format(args.datasets[i], avg_mae, avg_F_measure, avg_E_measure, avg_S_measure))
-    print('dataset: {}, max_mae: {:0.4f}, max_F_measure: {:0.4f}, max_E_measure: {:0.4f}, max_S_measure: {:0.4f}'.
-          format(args.datasets[i], max_mae, max_F_measure, max_E_measure, max_S_measure))
-    print('dataset: {}, min_mae: {:0.4f}, min_F_measure: {:0.4f}, min_E_measure: {:0.4f}, min_S_measure: {:0.4f}'.
-          format(args.datasets[i], min_mae, min_F_measure, min_E_measure, min_S_measure))
+    print('dataset: {}, total_img: {}, avg_mae: {:0.4f}, max_F_measure: {:0.4f}, avg_E_measure: {:0.4f}, avg_S_measure: {:0.4f}, speed: {:0.4f}'.
+          format(dataset, img_num, avg_mae, max_F_measure, avg_E_measure, avg_S_measure, speed))
 
-    logging.info('{}'.format('*' * 50))
-    logging.info('dataset: {}, avg_mae: {:0.4f}, avg_F_measure: {:0.4f}, avg_E_measure: {:0.4f}, avg_S_measure: {:0.4f}'.
-                 format(args.datasets[i], avg_mae, avg_F_measure, avg_E_measure, avg_S_measure))
-    logging.info('dataset: {}, max_mae: {:0.4f}, max_F_measure: {:0.4f}, max_E_measure: {:0.4f}, max_S_measure: {:0.4f}'.
-                 format(args.datasets[i], max_mae, max_F_measure, max_E_measure, max_S_measure))
-    logging.info('dataset: {}, min_mae: {:0.4f}, min_F_measure: {:0.4f}, min_E_measure: {:0.4f}, min_S_measure: {:0.4f}'.
-                 format(args.datasets[i], min_mae, min_F_measure, min_E_measure, min_S_measure))
-    logging.info('{}'.format('*' * 50))
+    logging.info('{}'.format('*' * 100))
+    logging.info('dataset: {}, total_img: {} avg_mae: {:0.4f}, max_F_measure: {:0.4f}, avg_E_measure: {:0.4f}, avg_S_measure: {:0.4f}, speed: {:0.4f}'.
+                 format(dataset, img_num, avg_mae, max_F_measure, avg_E_measure, avg_S_measure, speed))
+    logging.info('{}'.format('*' * 100))
+
+
+if __name__ == '__main__':
+    for data in args.datasets:
+        # 数据加载
+        transforms = get_Eval_transforms(input_size=(args.size, args.size))
+        Eval_dataset = EvalDataset(root_dir=args.predict_data_path, training_set_list=[data], training=False,
+                                   transforms=transforms)
+        Eval_dataloader = DataLoader(dataset=Eval_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
+
+        Eval(data, Eval_dataloader)

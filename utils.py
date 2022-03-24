@@ -275,15 +275,9 @@ def Eval_mae(pred, gt):
 
 # Max F-measure
 def Eval_F_measure(pred, gt):
-    beta2 = 0.3
-    avg_p, avg_r = 0.0, 0.0
     with torch.no_grad():
         prec, recall = _eval_pr(pred, gt, 255)
-        avg_p += prec
-        avg_r += recall
-        score = (1 + beta2) * avg_p * avg_r / (beta2 * avg_p + avg_r)
-        score[score != score] = 0  # for Nan
-        return score.max()
+        return prec, recall
 
 
 # E-measure
