@@ -10,7 +10,7 @@ from model.train_model import Video_Encoder_Model, Video_Decoder_Model
 import torch.optim as optim
 from utils import adjust_lr, Eval_mae, Eval_F_measure, Eval_E_measure, Eval_S_measure
 from datetime import datetime
-import utils
+from Loss import multi_bce_loss_fusion
 import logging
 import time
 
@@ -77,57 +77,12 @@ if torch.cuda.is_available():
 optimizer_Encoder = optim.Adam(Encoder_Model.parameters(), lr=args.lr)
 optimizer_Decoder = optim.Adam(Decoder_Model.parameters(), lr=args.lr)
 
-# Loss
-bce_loss = nn.BCELoss(size_average=True)
-ssim_loss = utils.SSIM(window_size=11, size_average=True)
-iou_loss = utils.IOU(size_average=True)
-
-
-def bce_ssim_loss(predict, target):
-    bce_out = bce_loss(predict, target)
-    ssim_out = 1 - ssim_loss(predict, target)
-    iou_out = iou_loss(predict, target)
-
-    loss = bce_out + ssim_out + iou_out
-
-    return loss
-
-
-def multi_bce_loss_fusion(frame1, frame2, frame3, frame4, gts):
-    # 第一帧
-    loss4_1 = bce_ssim_loss(frame1[0], gts[0])
-    loss3_1 = bce_ssim_loss(frame2[0], gts[0])
-    loss2_1 = bce_ssim_loss(frame3[0], gts[0])
-    loss1_1 = bce_ssim_loss(frame4[0], gts[0])
-
-    # 第二帧
-    loss4_2 = bce_ssim_loss(frame1[1], gts[1])
-    loss3_2 = bce_ssim_loss(frame2[1], gts[1])
-    loss2_2 = bce_ssim_loss(frame3[1], gts[1])
-    loss1_2 = bce_ssim_loss(frame4[1], gts[1])
-
-    # 第一帧
-    loss4_3 = bce_ssim_loss(frame1[2], gts[2])
-    loss3_3 = bce_ssim_loss(frame2[2], gts[2])
-    loss2_3 = bce_ssim_loss(frame3[2], gts[2])
-    loss1_3 = bce_ssim_loss(frame4[2], gts[2])
-
-    # 第一帧
-    loss4_4 = bce_ssim_loss(frame1[3], gts[3])
-    loss3_4 = bce_ssim_loss(frame2[3], gts[3])
-    loss2_4 = bce_ssim_loss(frame3[3], gts[3])
-    loss1_4 = bce_ssim_loss(frame4[3], gts[3])
-
-    frame1_loss = loss4_1 + loss3_1 + loss2_1 + loss1_1
-    frame2_loss = loss4_2 + loss3_2 + loss2_2 + loss1_2
-    frame3_loss = loss4_3 + loss3_3 + loss2_3 + loss1_3
-    frame4_loss = loss4_4 + loss3_4 + loss2_4 + loss1_4
-
-    return frame1_loss, frame2_loss, frame3_loss, frame4_loss
-
 
 # val
 def val(dataloader, val_encoder, val_decoder):
+    val_encoder.eval()
+    val_decoder.eval()
+
     total_num = len(dataloader) * 4
     MAES, E_measures, S_measures = 0.0, 0.0, 0.0
     img_num = 0

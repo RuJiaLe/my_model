@@ -9,7 +9,7 @@ import sys
 import logging
 
 
-# 学习率衰减
+# ******************************学习率衰减******************************
 def adjust_lr(optimizer, epoch, decay_rate=0.9, decay_epoch=30):
     decay = decay_rate ** (epoch // decay_epoch)
     # print("lr=", optimizer.param_groups[0]["lr"])
@@ -18,6 +18,7 @@ def adjust_lr(optimizer, epoch, decay_rate=0.9, decay_epoch=30):
         param_group['lr'] *= decay
 
 
+# ******************************Loss******************************
 # IOU Loss
 def _iou(predict, target, size_average=True):
     b = predict.shape[0]
@@ -105,7 +106,7 @@ class SSIM(torch.nn.Module):
         return _ssim(img1, img2, window, self.window_size, channel, self.size_average)
 
 
-# 图片保存
+# ******************************图片保存******************************
 def Save_result(img, frame_image_path, save_path):
     path_split = frame_image_path.split("/")[2:]
 
@@ -125,6 +126,7 @@ def Save_result(img, frame_image_path, save_path):
     img.save(image_save_path)
 
 
+# ******************************Evaluation material******************************
 # RP
 def _eval_pr(y_pred, y, num):
     if torch.cuda.is_available():

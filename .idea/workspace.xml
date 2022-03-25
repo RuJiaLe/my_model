@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="final3">
-      <change afterPath="$PROJECT_DIR$/pre_train_new.py" afterDir="false" />
+    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="2022/3/24/21:50">
+      <change afterPath="$PROJECT_DIR$/Loss.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dataset/dataload.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataset/dataload.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/evaluation.py" beforeDir="false" afterPath="$PROJECT_DIR$/evaluation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pre_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/pre_train_old.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pre_predict.py" beforeDir="false" afterPath="$PROJECT_DIR$/pre_predict.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pre_train_new.py" beforeDir="false" afterPath="$PROJECT_DIR$/pre_train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pre_train_old.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -31,10 +31,10 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../DCFNet" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
-  <component name="RunManager" selected="Python.test">
+  <component name="RunManager" selected="Python.pre_predict">
     <configuration name="evaluation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="my_model" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -142,10 +142,10 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.test" />
-        <item itemvalue="Python.predict" />
-        <item itemvalue="Python.evaluation" />
         <item itemvalue="Python.pre_predict" />
+        <item itemvalue="Python.predict" />
+        <item itemvalue="Python.test" />
+        <item itemvalue="Python.evaluation" />
         <item itemvalue="Python.train" />
       </list>
     </recent_temporary>
@@ -222,7 +222,21 @@
       <option name="project" value="LOCAL" />
       <updated>1648115330798</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL-00010" summary="2022/3/24/21:49">
+      <created>1648129754117</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1648129754117</updated>
+    </task>
+    <task id="LOCAL-00011" summary="2022/3/24/21:50">
+      <created>1648129979017</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1648129979017</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -245,6 +259,8 @@
     <MESSAGE value="final" />
     <MESSAGE value="final2" />
     <MESSAGE value="final3" />
-    <option name="LAST_COMMIT_MESSAGE" value="final3" />
+    <MESSAGE value="2022/3/24/21:49" />
+    <MESSAGE value="2022/3/24/21:50" />
+    <option name="LAST_COMMIT_MESSAGE" value="2022/3/24/21:50" />
   </component>
 </project>
