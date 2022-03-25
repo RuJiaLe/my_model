@@ -112,7 +112,7 @@ def val(dataloader, val_encoder, val_decoder):
         out_time = time.time()
 
         # Loss 计算
-        predicts = [out1, out2, out3, out4]
+        predicts = out4
 
         for predict, gt in (zip(predicts, gts)):
             mae = Eval_mae(predict, gt)
