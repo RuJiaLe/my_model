@@ -26,7 +26,7 @@ parser.add_argument('--decay_epoch', type=int, default=15, help='every n epochs 
 parser.add_argument('--save_model', type=str, default="./save_models/train_model", help='save_Encoder_model_path')
 parser.add_argument('--load_train_model', type=bool, default=False, help='load_model')
 parser.add_argument('--load_pre_train_model', type=bool, default=False, help='load_model')
-parser.add_argument('--dataset', type=list, default=["DAVIS", "DAVSOD"], help='dataset')
+parser.add_argument('--dataset', type=list, default=["DAVIS", "DAVSOD", "UVSD"], help='dataset')
 parser.add_argument('--log_dir', type=str, default="./Log_file", help="log_dir file")
 
 args = parser.parse_args()

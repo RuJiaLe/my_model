@@ -108,6 +108,9 @@ def multi_bce_loss_fusion(frame1, frame2, frame3, frame4, gts):
 
 # val
 def val(dataloader, val_encoder, val_decoder):
+    val_encoder.eval()
+    val_decoder.eval()
+
     total_num = len(dataloader) * 4
     MAES, E_measures, S_measures = 0.0, 0.0, 0.0
     img_num = 0
