@@ -6,59 +6,51 @@ from torchvision.models import resnet50
 
 
 # CBR2
-class CBR2(nn.Module):
+class CR2(nn.Module):
     def __init__(self, input_channels, out_channels):
-        super(CBR2, self).__init__()
+        super(CR2, self).__init__()
         self.conv = nn.Conv2d(in_channels=input_channels, out_channels=out_channels, kernel_size=(3, 3), stride=(1, 1),
                               padding=1)
-        self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         x = self.conv(x)
-        x = self.bn(x)
         x = self.relu(x)
 
         return x
 
 
 # CBR4
-class CBR4(nn.Module):
+class CR4(nn.Module):
     def __init__(self, input_channels, out_channels):
-        super(CBR4, self).__init__()
+        super(CR4, self).__init__()
         self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=input_channels // 2, kernel_size=(3, 3), stride=(1, 1),
                                padding=1)
-        self.bn1 = nn.BatchNorm2d(input_channels // 2)
         self.relu1 = nn.ReLU(inplace=True)
 
         self.conv2 = nn.Conv2d(in_channels=input_channels // 2, out_channels=out_channels, kernel_size=(3, 3), stride=(1, 1),
                                padding=1)
-        self.bn2 = nn.BatchNorm2d(out_channels)
         self.relu2 = nn.ReLU(inplace=True)
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.bn1(x)
         x = self.relu1(x)
 
         x = self.conv2(x)
-        x = self.bn2(x)
         x = self.relu2(x)
 
         return x
 
 
 # CBS
-class CBS(nn.Module):
+class CS(nn.Module):
     def __init__(self, input_channels, out_channels):
-        super(CBS, self).__init__()
+        super(CS, self).__init__()
         self.conv = nn.Conv2d(in_channels=input_channels, out_channels=out_channels, kernel_size=(1, 1))
-        self.bn = nn.BatchNorm2d(out_channels)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         x = self.conv(x)
-        x = self.bn(x)
         x = self.sigmoid(x)
 
         return x
@@ -122,19 +114,6 @@ class block_aspp_moudle(nn.Module):
         return out
 
 
-# attention module模块
-class S_attention_module(nn.Module):
-    def __init__(self, in_channels):
-        super(S_attention_module, self).__init__()
-        self.conv = nn.Conv2d(in_channels=in_channels, out_channels=1, kernel_size=(3, 3), stride=(1, 1), padding=1)
-
-    def forward(self, x):
-        spatial_attention = torch.sigmoid(self.conv(x))
-
-        out = x + x * spatial_attention
-        return out
-
-
 class CS_attention_module(nn.Module):
     def __init__(self, in_channels):
         super(CS_attention_module, self).__init__()
@@ -154,104 +133,127 @@ class CS_attention_module(nn.Module):
 
 class Video_Encoder_Part(nn.Module):
 
-    def __init__(self, output_stride, input_channels=3, pretrained=False):
+    def __init__(self, output_stride, input_channels=12, pretrained=False):
         super(Video_Encoder_Part, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=64, kernel_size=(3, 3), padding=1,
-                               stride=(1, 1))
+        self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=64, kernel_size=(7, 7), padding=3,
+                               stride=(2, 2), bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu1 = nn.ReLU(inplace=True)
         self.max_pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
         self.resnet = resnet50(pretrained=pretrained)
 
-        self.block3_aspp = block_aspp_moudle(in_dim=1024, out_dim=512, output_stride=output_stride)
-        self.block4_aspp = block_aspp_moudle(in_dim=2048, out_dim=1024, output_stride=output_stride)
+        self.block1_aspp = block_aspp_moudle(in_dim=256, out_dim=256, output_stride=output_stride)
+        self.block2_aspp = block_aspp_moudle(in_dim=512, out_dim=512, output_stride=output_stride)
+        self.block3_aspp = block_aspp_moudle(in_dim=1024, out_dim=1024, output_stride=output_stride)
+        self.block4_aspp = block_aspp_moudle(in_dim=2048, out_dim=2048, output_stride=output_stride)
 
-        self.conv1x1_1 = nn.Conv2d(in_channels=256, out_channels=128, kernel_size=(1, 1), bias=False)
-        self.conv1x1_2 = nn.Conv2d(in_channels=512, out_channels=256, kernel_size=(1, 1), bias=False)
+        self.CS_attention_module_1 = CS_attention_module(in_channels=256)
+        self.CS_attention_module_2 = CS_attention_module(in_channels=512)
+        self.CS_attention_module_3 = CS_attention_module(in_channels=1024)
+        self.CS_attention_module_4 = CS_attention_module(in_channels=2048)
 
-        self.S_attention_module_1 = S_attention_module(in_channels=128)
-        self.S_attention_module_2 = S_attention_module(in_channels=256)
-        self.CS_attention_module_3 = CS_attention_module(in_channels=512)
-        self.CS_attention_module_4 = CS_attention_module(in_channels=1024)
-
-    def forward(self, x):  # (1, 3, 256, 256)
-        block0 = self.conv1(x)
+    def forward(self, x):  # (1, 12, 256, 256)
+        block0 = self.conv1(x)  # (1, 64, 128, 128)
         block0 = self.bn1(block0)
         block0 = self.relu1(block0)
-        block0 = self.max_pool1(block0)  # (1, 64, 128, 128)
+        block0 = self.max_pool1(block0)  # (1, 64, 64, 64)
 
-        block1 = self.resnet.layer1(block0)  # (1, 256, 128, 128)
-        block2 = self.resnet.layer2(block1)  # (1, 512, 64, 64)
-        block3 = self.resnet.layer3(block2)  # (1, 1024, 32, 32)
-        block4 = self.resnet.layer4(block3)  # (1, 2048, 16, 16)
+        block1 = self.resnet.layer1(block0)  # (1, 256, 64, 64)
+        block2 = self.resnet.layer2(block1)  # (1, 512, 32, 32)
+        block3 = self.resnet.layer3(block2)  # (1, 1024, 16, 16)
+        block4 = self.resnet.layer4(block3)  # (1, 2048, 8, 8)
 
-        block1_result = self.conv1x1_1(block1)
-        block2_result = self.conv1x1_2(block2)
+        # print(f'block1: {block1.size()}')
+        # print(f'block2: {block2.size()}')
+        # print(f'block3: {block3.size()}')
+        # print(f'block4: {block4.size()}')
+
+        block1_result = self.block1_aspp(block1)
+        block2_result = self.block2_aspp(block2)
         block3_result = self.block3_aspp(block3)
         block4_result = self.block4_aspp(block4)
 
-        block1_result = self.S_attention_module_1(block1_result)  # (1, 128, 128, 128)
-        block2_result = self.S_attention_module_2(block2_result)  # (1, 256, 64, 64)
+        bloch1_result = self.CS_attention_module_1(block1_result)  # (1, 512, 32, 32)
+        bloch2_result = self.CS_attention_module_2(block2_result)  # (1, 1024, 16, 16)
         bloch3_result = self.CS_attention_module_3(block3_result)  # (1, 512, 32, 32)
         bloch4_result = self.CS_attention_module_4(block4_result)  # (1, 1024, 16, 16)
 
         return [block1_result, block2_result, bloch3_result, bloch4_result]
 
 
-# multi_headed_self_attention_module
-class self_attention(nn.Module):
+# Video_Decoder_Part
+class Video_Decoder_Part(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super(self_attention, self).__init__()
-        self.CBR4_1 = CBR2(in_channels, out_channels)
-        self.CBR4_2 = CBR2(in_channels, out_channels)
-        self.CBR4_3 = CBR2(in_channels, out_channels)
-        self.CBR4_4 = CBR2(in_channels, out_channels)
+        super(Video_Decoder_Part, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=in_channels * 2, out_channels=in_channels, kernel_size=(1, 1), bias=False)
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=(3, 3), padding=1)
+        self.relu1 = nn.ReLU(inplace=True)
 
-        self.Linear = nn.Linear(in_channels, in_channels // 2)
+        self.conv2 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=(3, 3), padding=1)
+        self.relu2 = nn.ReLU(inplace=True)
+
+        self.conv3 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), padding=1)
+        self.relu3 = nn.ReLU(inplace=True)
+
+        self.conv1x1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, 1))
 
         self.Up_sample_2 = nn.Upsample(scale_factor=2, mode='bilinear')
 
-    def forward(self, x4_1, x4_2, x4_3, x4_4):  # (1, 1024, 16, 16)
+    def forward(self, x):
 
-        x4_1 = self.CBR4_1(x4_1)  # (1, 512, 16, 16)
-        x4_2 = self.CBR4_2(x4_2)
-        x4_3 = self.CBR4_3(x4_3)
-        x4_4 = self.CBR4_4(x4_4)
+        out = self.conv1(x)
+        out = self.relu1(out)
+        out = self.conv2(out)
+        out = self.relu2(out)
+        out = self.conv3(out)
+        out = self.relu3(out)
 
-        attention_feature = torch.cat((x4_1, x4_2, x4_3, x4_4), dim=1)
-        attention_feature = self.conv1(attention_feature)
+        x = self.conv1x1(x)
+        out = out * x
 
-        N, C, H, W = attention_feature.shape
-        attention_feature_max = F.adaptive_max_pool2d(attention_feature, (1, 1)).view(N, C) / math.sqrt(C)
+        out = self.Up_sample_2(out)
 
-        attention = F.softmax(self.Linear(attention_feature_max), dim=1)
+        return out
 
-        w1 = w2 = w3 = w4 = attention
-        w = torch.cat((w1, w2, w3, w4), dim=0) / math.sqrt(C)
-        w = F.softmax(w, dim=1)
-        w = torch.mean(w, dim=1)
-        w1, w2, w3, w4 = w[0], w[1], w[2], w[3]
 
-        attention1 = attention * w1
-        attention2 = attention * w2
-        attention3 = attention * w3
-        attention4 = attention * w4
+# multi_headed_self_attention_module
+class self_attention(nn.Module):
+    def __init__(self):
+        super(self_attention, self).__init__()
 
-        out1 = x4_1 + x4_1 * attention1.unsqueeze(2).unsqueeze(3)
-        out2 = x4_2 + x4_2 * attention2.unsqueeze(2).unsqueeze(3)
-        out3 = x4_3 + x4_3 * attention3.unsqueeze(2).unsqueeze(3)
-        out4 = x4_4 + x4_4 * attention4.unsqueeze(2).unsqueeze(3)
+    def forward(self, frames):  # (1, 3, 256, 256)
+        x1, x2, x3, x4 = frames[0], frames[1], frames[2], frames[3]
+        V = torch.cat((x1, x2, x3, x4), dim=1)
+        Q1 = torch.cat([x1] * 4, dim=1)
+        Q2 = torch.cat([x2] * 4, dim=1)
+        Q3 = torch.cat([x3] * 4, dim=1)
+        Q4 = torch.cat([x4] * 4, dim=1)
 
-        out1 = self.Up_sample_2(out1)
-        out2 = self.Up_sample_2(out2)
-        out3 = self.Up_sample_2(out3)
-        out4 = self.Up_sample_2(out4)
+        alpha1 = Q1 * V
+        alpha2 = Q2 * V
+        alpha3 = Q3 * V
+        alpha4 = Q4 * V
 
-        return out1, out2, out3, out4
+        out1 = F.softmax(alpha1, dim=1) * V
+        out2 = F.softmax(alpha2, dim=1) * V
+        out3 = F.softmax(alpha3, dim=1) * V
+        out4 = F.softmax(alpha4, dim=1) * V
+
+        out1 = torch.chunk(out1, 4, dim=1)
+        out2 = torch.chunk(out2, 4, dim=1)
+        out3 = torch.chunk(out3, 4, dim=1)
+        out4 = torch.chunk(out4, 4, dim=1)
+
+        out1 = out1[0] + out1[1] + out1[2] + out1[3]
+        out2 = out2[0] + out2[1] + out2[2] + out2[3]
+        out3 = out3[0] + out3[1] + out3[2] + out3[3]
+        out4 = out4[0] + out4[1] + out4[2] + out4[3]
+
+        out = torch.cat((out1, out2, out3, out4), dim=1)
+
+        return out
 
 
 # pre_train
