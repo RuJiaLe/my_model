@@ -91,7 +91,7 @@ def val(dataloader, val_encoder, val_decoder):
     start_time = time.time()
     for i, packs in enumerate(dataloader):
         in_time = time.time()
-        blocks, gts = [], []
+        images, gts = [], []
         for pack in packs:
             img_num = img_num + 1
             image, gt = pack["image"], pack["gt"]
@@ -101,18 +101,16 @@ def val(dataloader, val_encoder, val_decoder):
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
-            # 编码
-            block = val_encoder(image)
-
-            blocks.append(block)
+            images.append(image)
             gts.append(gt)
 
-        # 解码
-        out1, out2, out3, out4 = val_decoder(blocks)
+        # 解码 编码
+        block = val_encoder(images)
+        out4, out3, out2, ou1, out0 = val_decoder(block)
         out_time = time.time()
 
         # Loss 计算
-        predicts = out4
+        predicts = out0
 
         for predict, gt in (zip(predicts, gts)):
             mae = Eval_mae(predict, gt)
@@ -177,7 +175,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
         optimizer_encoder.zero_grad()
         optimizer_decoder.zero_grad()
 
-        blocks, gts = [], []
+        images, gts = [], []
         for pack in packs:
             image, gt = pack["image"], pack["gt"]
 
@@ -185,19 +183,16 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
                 image, gt = Variable(image.cuda(), requires_grad=False), Variable(gt.cuda(), requires_grad=False)
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
-
-            # 编码
-            block = encoder_model(image)
-
-            blocks.append(block)
+            images.append(image)
             gts.append(gt)
 
-        # 解码
-        out1, out2, out3, out4 = decoder_model(blocks)
+        # 编码与解码
+        block = encoder_model(images)
+        out4, out3, out2, out1, out0 = decoder_model(block)  # 第4阶段, 第3阶段, 第2阶段, 第1阶段, 第0阶段
 
         # Loss 计算
         loss = []
-        frame1_loss, frame2_loss, frame3_loss, frame4_loss = multi_bce_loss_fusion(out1, out2, out3, out4, gts)
+        frame1_loss, frame2_loss, frame3_loss, frame4_loss = multi_bce_loss_fusion(out4, out3, out2, out1, out0, gts)
         loss = [frame1_loss, frame2_loss, frame3_loss, frame4_loss]
         losses += loss
 

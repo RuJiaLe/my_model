@@ -11,6 +11,7 @@ import torch.optim as optim
 from utils import adjust_lr, Eval_mae, Eval_F_measure, Eval_E_measure, Eval_S_measure
 from datetime import datetime
 import utils
+from Loss import multi_bce_loss_fusion
 import logging
 import time
 
@@ -57,54 +58,6 @@ if torch.cuda.is_available():
 optimizer_Encoder = optim.Adam(Encoder_Model.parameters(), lr=args.lr)
 optimizer_Decoder = optim.Adam(Decoder_Model.parameters(), lr=args.lr)
 
-# Loss
-bce_loss = nn.BCELoss(size_average=True)
-ssim_loss = utils.SSIM(window_size=11, size_average=True)
-iou_loss = utils.IOU(size_average=True)
-
-
-def bce_ssim_loss(predict, target):
-    bce_out = bce_loss(predict, target)
-    ssim_out = 1 - ssim_loss(predict, target)
-    iou_out = iou_loss(predict, target)
-
-    loss = bce_out + ssim_out + iou_out
-
-    return loss
-
-
-def multi_bce_loss_fusion(frame1, frame2, frame3, frame4, gts):
-    # 第一帧
-    loss4_1 = bce_ssim_loss(frame1[0], gts[0])
-    loss3_1 = bce_ssim_loss(frame2[0], gts[0])
-    loss2_1 = bce_ssim_loss(frame3[0], gts[0])
-    loss1_1 = bce_ssim_loss(frame4[0], gts[0])
-
-    # 第二帧
-    loss4_2 = bce_ssim_loss(frame1[1], gts[1])
-    loss3_2 = bce_ssim_loss(frame2[1], gts[1])
-    loss2_2 = bce_ssim_loss(frame3[1], gts[1])
-    loss1_2 = bce_ssim_loss(frame4[1], gts[1])
-
-    # 第一帧
-    loss4_3 = bce_ssim_loss(frame1[2], gts[2])
-    loss3_3 = bce_ssim_loss(frame2[2], gts[2])
-    loss2_3 = bce_ssim_loss(frame3[2], gts[2])
-    loss1_3 = bce_ssim_loss(frame4[2], gts[2])
-
-    # 第一帧
-    loss4_4 = bce_ssim_loss(frame1[3], gts[3])
-    loss3_4 = bce_ssim_loss(frame2[3], gts[3])
-    loss2_4 = bce_ssim_loss(frame3[3], gts[3])
-    loss1_4 = bce_ssim_loss(frame4[3], gts[3])
-
-    frame1_loss = loss4_1 + loss3_1 + loss2_1 + loss1_1
-    frame2_loss = loss4_2 + loss3_2 + loss2_2 + loss1_2
-    frame3_loss = loss4_3 + loss3_3 + loss2_3 + loss1_3
-    frame4_loss = loss4_4 + loss3_4 + loss2_4 + loss1_4
-
-    return frame1_loss, frame2_loss, frame3_loss, frame4_loss
-
 
 # val
 def val(dataloader, val_encoder, val_decoder):
@@ -119,7 +72,7 @@ def val(dataloader, val_encoder, val_decoder):
     start_time = time.time()
     for i, packs in enumerate(dataloader):
         in_time = time.time()
-        blocks, gts = [], []
+        images, gts = [], []
         for pack in packs:
             img_num = img_num + 1
             image, gt = pack["image"], pack["gt"]
@@ -129,18 +82,16 @@ def val(dataloader, val_encoder, val_decoder):
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
-            # 编码
-            block = val_encoder(image)
-
-            blocks.append(block)
+            images.append(image)
             gts.append(gt)
 
-        # 解码
-        out1, out2, out3, out4 = val_decoder(blocks)
+        # 编码解码
+        block = val_encoder(images)
+        out4, out3, out2, out1, out0 = val_decoder(block)
         out_time = time.time()
 
         # Loss 计算
-        predicts = [out1, out2, out3, out4]
+        predicts = out0
 
         for predict, gt in (zip(predicts, gts)):
             mae = Eval_mae(predict, gt)
@@ -205,7 +156,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
         optimizer_encoder.zero_grad()
         optimizer_decoder.zero_grad()
 
-        blocks, gts = [], []
+        images, gts = [], []
         for pack in packs:
             image, gt = pack["image"], pack["gt"]
 
@@ -214,18 +165,16 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
-            # 编码
-            block = encoder_model(image)
-
-            blocks.append(block)
+            images.append(image)
             gts.append(gt)
 
-        # 解码
-        out1, out2, out3, out4 = decoder_model(blocks)
+        # 编码解码
+        block = encoder_model(images)
+        out4, out3, out2, out1, out0 = decoder_model(block)
 
         # Loss 计算
         loss = []
-        frame1_loss, frame2_loss, frame3_loss, frame4_loss = multi_bce_loss_fusion(out1, out2, out3, out4, gts)
+        frame1_loss, frame2_loss, frame3_loss, frame4_loss = multi_bce_loss_fusion(out4, out3, out2, out1, out0, gts)
         loss = [frame1_loss, frame2_loss, frame3_loss, frame4_loss]
         losses += loss
 

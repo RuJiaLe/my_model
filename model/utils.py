@@ -202,7 +202,6 @@ class Video_Decoder_Part(nn.Module):
         self.Up_sample_2 = nn.Upsample(scale_factor=2, mode='bilinear')
 
     def forward(self, x):
-
         out = self.conv1(x)
         out = self.relu1(out)
         out = self.conv2(out)

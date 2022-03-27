@@ -62,11 +62,6 @@ class Video_Decoder_Model(nn.Module):
         self.decoder3_3 = Video_Decoder_Part(1024, 512)
         self.decoder3_4 = Video_Decoder_Part(1024, 512)
 
-        self.ConvLSTM3_1 = ConvLSTMCell(512, 512)
-        self.ConvLSTM3_2 = ConvLSTMCell(512, 512)
-        self.ConvLSTM3_3 = ConvLSTMCell(512, 512)
-        self.ConvLSTM3_4 = ConvLSTMCell(512, 512)
-
         # --------------------第二解码阶段--------------------
         self.CR2_1 = CR2(1024, 512)
         self.CR2_2 = CR2(1024, 512)
@@ -88,11 +83,6 @@ class Video_Decoder_Model(nn.Module):
         self.decoder1_2 = Video_Decoder_Part(256, 128)
         self.decoder1_3 = Video_Decoder_Part(256, 128)
         self.decoder1_4 = Video_Decoder_Part(256, 128)
-
-        self.ConvLSTM1_1 = ConvLSTMCell(128, 128)
-        self.ConvLSTM1_2 = ConvLSTMCell(128, 128)
-        self.ConvLSTM1_3 = ConvLSTMCell(128, 128)
-        self.ConvLSTM1_4 = ConvLSTMCell(128, 128)
 
         # --------------------refine--------------------
 

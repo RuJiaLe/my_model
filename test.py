@@ -20,7 +20,18 @@ x = [x1, x2, x3, x4]
 block = Encoder_Model(x)
 out = Decoder_Model(block)
 
-# print(f'out1_size: {block[0].size()}')
-# print(f'out2_size: {block[1].size()}')
-# print(f'out3_size: {block[2].size()}')
-# print(f'out4_size: {block[3].size()}')
+print(f'out1_size: {block[0].size()}')
+print(f'out2_size: {block[1].size()}')
+print(f'out3_size: {block[2].size()}')
+print(f'out4_size: {block[3].size()}')
+
+# from model.ConvGRU import ConvGRUCell
+# import torch
+#
+# x1 = torch.rand(1, 3, 256, 256)
+#
+# model = ConvGRUCell(3, 3)
+#
+# state = model(x1, x1)
+#
+# print(state.size())
