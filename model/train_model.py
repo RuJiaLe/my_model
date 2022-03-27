@@ -30,7 +30,7 @@ class Video_Encoder_Model(nn.Module):
             self.state_dict()[key][...] = 0.001
 
     def freeze_bn(self):
-        for m in self.backbone.named_modules():
+        for m in self.named_modules():
             if isinstance(m[1], nn.BatchNorm2d):
                 m[1].eval()
 
@@ -159,6 +159,12 @@ class Video_Decoder_Model(nn.Module):
         self.Up_sample_4 = nn.Upsample(scale_factor=4, mode='bilinear')
         self.Up_sample_2 = nn.Upsample(scale_factor=2, mode='bilinear')
 
+    # freeze_bn
+    def freeze_bn(self):
+        for m in self.named_modules():
+            if isinstance(m[1], nn.BatchNorm2d):
+                m[1].eval()
+
     def forward(self, block):  # (1, 2048, 8, 8)
         # --------------------第四解码阶段--------------------
         x4_1 = self.decoder4_1(block[3])  # (1, 1024, 16, 16)
@@ -280,10 +286,10 @@ class Video_Decoder_Model(nn.Module):
         output2_3 = self.Up_sample_4(self.CS2_3(out2_3))
         output2_4 = self.Up_sample_4(self.CS2_4(out2_4))
 
-        output1_1 = self.Up_sample_2(self.CS2_1(out2_1))
-        output1_2 = self.Up_sample_2(self.CS2_2(out2_2))
-        output1_3 = self.Up_sample_2(self.CS2_3(out2_3))
-        output1_4 = self.Up_sample_2(self.CS2_4(out2_4))
+        output1_1 = self.Up_sample_2(self.CS1_1(out1_1))
+        output1_2 = self.Up_sample_2(self.CS1_2(out1_2))
+        output1_3 = self.Up_sample_2(self.CS1_3(out1_3))
+        output1_4 = self.Up_sample_2(self.CS1_4(out1_4))
 
         output0_1 = self.CS0_1(out0_1)
         output0_2 = self.CS0_2(out0_2)

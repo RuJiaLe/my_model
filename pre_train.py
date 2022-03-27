@@ -39,7 +39,7 @@ if torch.cuda.is_available():
 else:
     device = 'cpu'
 
-Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=True)
+Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=12, pretrained=True)
 Decoder_Model = Video_Decoder_Model()
 
 # 加载训练模型
@@ -144,8 +144,8 @@ def val(dataloader, val_encoder, val_decoder):
 def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder, optimizer_decoder, Epoch):
     encoder_model.train()
     decoder_model.train()
-    encoder_model.module.freeze_bn()
-    decoder_model.module.freeze_bn()
+    encoder_model.freeze_bn()
+    decoder_model.freeze_bn()
 
     total_step = len(train_data)
     losses = []
@@ -223,13 +223,13 @@ if __name__ == '__main__':
     # 数据加载
     # train data load
     pre_train_transforms = get_train_transforms(input_size=(args.size, args.size))
-    pre_train_dataset = ImageDataset(root_dir="./pre_train_data", training_set_list=['DUTS'],
+    pre_train_dataset = ImageDataset(root_dir="./data/pre_train_data", training_set_list=['DUTS'],
                                      image_transform=pre_train_transforms)
     pre_train_dataloader = DataLoader(dataset=pre_train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=True, drop_last=True)
 
     # val data load
     pre_val_transforms = get_transforms(input_size=(args.size, args.size))
-    pre_val_dataset = ImageDataset(root_dir="./pre_val_data", training_set_list=["DUTS"],
+    pre_val_dataset = ImageDataset(root_dir="./data/pre_val_data", training_set_list=["DUTS"],
                                    image_transform=pre_val_transforms)
     pre_val_dataloader = DataLoader(dataset=pre_val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 

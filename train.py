@@ -40,7 +40,7 @@ if torch.cuda.is_available():
 else:
     device = 'cpu'
 
-Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=True)
+Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=12, pretrained=True)
 Decoder_Model = Video_Decoder_Model()
 
 # 加载预训练模型
@@ -163,8 +163,8 @@ def val(dataloader, val_encoder, val_decoder):
 def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder, optimizer_decoder, Epoch):
     encoder_model.train()
     decoder_model.train()
-    encoder_model.module.freeze_bn()
-    decoder_model.module.freeze_bn()
+    encoder_model.freeze_bn()
+    decoder_model.freeze_bn()
 
     total_step = len(train_data)
     losses = []
@@ -241,13 +241,13 @@ if __name__ == '__main__':
     # 数据加载
     # train data load
     train_transforms = get_train_transforms(input_size=(args.size, args.size))
-    train_dataset = VideoDataset(root_dir="./train_data", training_set_list=args.dataset, training=True,
+    train_dataset = VideoDataset(root_dir="./data/train_data", training_set_list=args.dataset, training=True,
                                  transforms=train_transforms)
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=True, drop_last=True)
 
     # val data load
     val_transforms = get_transforms(input_size=(args.size, args.size))
-    val_dataset = VideoDataset(root_dir="./val_data", training_set_list=["DAVSOD"], training=True,
+    val_dataset = VideoDataset(root_dir="./data/val_data", training_set_list=["DAVSOD"], training=True,
                                transforms=val_transforms)
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
