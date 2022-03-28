@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
-from torchvision.models import resnet50
+from .Resnet import resnet50
 
 
 # CBR2
