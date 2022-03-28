@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="2022/3/27 12:10">
+    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="2022/3/27 15:56">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Log_file/pre_train_log.log" beforeDir="false" afterPath="$PROJECT_DIR$/Log_file/pre_train_log.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Log_file/train_log.log" beforeDir="false" afterPath="$PROJECT_DIR$/Log_file/train_log.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Log_file/val_log.log" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/ConvGRU.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/ConvGRU.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/pre_train_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/pre_train_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/model/train_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/train_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pre_predict.py" beforeDir="false" afterPath="$PROJECT_DIR$/pre_predict.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pre_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/pre_train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/predict.py" beforeDir="false" afterPath="$PROJECT_DIR$/predict.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/speed.py" beforeDir="false" afterPath="$PROJECT_DIR$/speed.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -30,13 +32,14 @@
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
-  <component name="RunManager" selected="Python.pre_train">
+  <component name="RunManager" selected="Python.speed">
     <configuration name="pre_predict" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="my_model" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -144,11 +147,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.pre_train" />
-        <item itemvalue="Python.train" />
         <item itemvalue="Python.speed" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.pre_predict" />
+        <item itemvalue="Python.pre_train" />
+        <item itemvalue="Python.train" />
       </list>
     </recent_temporary>
   </component>
@@ -287,7 +290,14 @@
       <option name="project" value="LOCAL" />
       <updated>1648354262297</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="2022/3/27 15:56">
+      <created>1648367815192</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1648367815192</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -318,6 +328,7 @@
     <MESSAGE value="2022/3/26" />
     <MESSAGE value="2022/3/27 9:37" />
     <MESSAGE value="2022/3/27 12:10" />
-    <option name="LAST_COMMIT_MESSAGE" value="2022/3/27 12:10" />
+    <MESSAGE value="2022/3/27 15:56" />
+    <option name="LAST_COMMIT_MESSAGE" value="2022/3/27 15:56" />
   </component>
 </project>

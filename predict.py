@@ -53,6 +53,9 @@ def predict(dataloader, encoder_model, decoder_model, dataset):
     img_num = len(dataloader)
     speed = 0.0
 
+    Encoder_Model.eval()
+    Decoder_Model.eval()
+
     for i, packs in enumerate(dataloader):
         i = i + 1
         images, paths, gts = [], [], []

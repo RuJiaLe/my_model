@@ -136,47 +136,48 @@ class Video_Encoder_Part(nn.Module):
     def __init__(self, output_stride, input_channels=12, pretrained=False):
         super(Video_Encoder_Part, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=64, kernel_size=(7, 7), padding=3,
-                               stride=(2, 2), bias=False)
+        self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=64, kernel_size=(3, 3), padding=1,
+                               stride=(1, 1), bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.relu1 = nn.ReLU(inplace=True)
         self.max_pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
         self.resnet = resnet50(pretrained=pretrained)
 
-        self.block1_aspp = block_aspp_moudle(in_dim=256, out_dim=256, output_stride=output_stride)
-        self.block2_aspp = block_aspp_moudle(in_dim=512, out_dim=512, output_stride=output_stride)
         self.block3_aspp = block_aspp_moudle(in_dim=1024, out_dim=1024, output_stride=output_stride)
-        self.block4_aspp = block_aspp_moudle(in_dim=2048, out_dim=2048, output_stride=output_stride)
+        self.block4_aspp = block_aspp_moudle(in_dim=2048, out_dim=1024, output_stride=output_stride)
 
         self.CS_attention_module_1 = CS_attention_module(in_channels=256)
         self.CS_attention_module_2 = CS_attention_module(in_channels=512)
         self.CS_attention_module_3 = CS_attention_module(in_channels=1024)
-        self.CS_attention_module_4 = CS_attention_module(in_channels=2048)
+        self.CS_attention_module_4 = CS_attention_module(in_channels=1024)
 
     def forward(self, x):  # (1, 12, 256, 256)
-        block0 = self.conv1(x)  # (1, 64, 128, 128)
+        block0 = self.conv1(x)  # (1, 64, 256, 256)
         block0 = self.bn1(block0)
         block0 = self.relu1(block0)
-        block0 = self.max_pool1(block0)  # (1, 64, 64, 64)
+        block0 = self.max_pool1(block0)  # (1, 64, 128, 128)
 
         block1 = self.resnet.layer1(block0)  # (1, 256, 64, 64)
         block2 = self.resnet.layer2(block1)  # (1, 512, 32, 32)
         block3 = self.resnet.layer3(block2)  # (1, 1024, 16, 16)
-        block4 = self.resnet.layer4(block3)  # (1, 2048, 8, 8)
+        block4 = self.resnet.layer4(block3)  # (1, 1024, 8, 8)
 
         # print(f'block1: {block1.size()}')
         # print(f'block2: {block2.size()}')
         # print(f'block3: {block3.size()}')
         # print(f'block4: {block4.size()}')
 
-        block1_result = self.block1_aspp(block1)
-        block2_result = self.block2_aspp(block2)
         block3_result = self.block3_aspp(block3)
         block4_result = self.block4_aspp(block4)
 
-        bloch1_result = self.CS_attention_module_1(block1_result)  # (1, 512, 32, 32)
-        bloch2_result = self.CS_attention_module_2(block2_result)  # (1, 1024, 16, 16)
+        # print(f'block1_result: {block1.size()}')
+        # print(f'block2_result: {block2.size()}')
+        # print(f'block3_result: {block3_result.size()}')
+        # print(f'block4_result: {block4_result.size()}')
+
+        block1_result = self.CS_attention_module_1(block1)  # (1, 512, 32, 32)
+        block2_result = self.CS_attention_module_2(block2)  # (1, 1024, 16, 16)
         bloch3_result = self.CS_attention_module_3(block3_result)  # (1, 512, 32, 32)
         bloch4_result = self.CS_attention_module_4(block4_result)  # (1, 1024, 16, 16)
 
@@ -188,14 +189,11 @@ class Video_Decoder_Part(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(Video_Decoder_Part, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=(3, 3), padding=1)
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=(1, 1))
         self.relu1 = nn.ReLU(inplace=True)
 
-        self.conv2 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=(3, 3), padding=1)
+        self.conv2 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), padding=1)
         self.relu2 = nn.ReLU(inplace=True)
-
-        self.conv3 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), padding=1)
-        self.relu3 = nn.ReLU(inplace=True)
 
         self.conv1x1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, 1))
 
@@ -206,8 +204,6 @@ class Video_Decoder_Part(nn.Module):
         out = self.relu1(out)
         out = self.conv2(out)
         out = self.relu2(out)
-        out = self.conv3(out)
-        out = self.relu3(out)
 
         x = self.conv1x1(x)
         out = out * x
@@ -253,29 +249,3 @@ class self_attention(nn.Module):
         out = torch.cat((out1, out2, out3, out4), dim=1)
 
         return out
-
-
-# pre_train
-class pre_train_decoder(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(pre_train_decoder, self).__init__()
-        self.CBR4_1 = CBR2(in_channels, out_channels)
-        self.CBR4_2 = CBR2(in_channels, out_channels)
-        self.CBR4_3 = CBR2(in_channels, out_channels)
-        self.CBR4_4 = CBR2(in_channels, out_channels)
-
-        self.Up_sample_2 = nn.Upsample(scale_factor=2, mode='bilinear')
-
-    def forward(self, x4_1, x4_2, x4_3, x4_4):  # (1, 1024, 16, 16)
-
-        x4_1 = self.CBR4_1(x4_1)  # (1, 512, 16, 16)
-        x4_2 = self.CBR4_2(x4_2)
-        x4_3 = self.CBR4_3(x4_3)
-        x4_4 = self.CBR4_4(x4_4)
-
-        out1 = self.Up_sample_2(x4_1)
-        out2 = self.Up_sample_2(x4_2)
-        out3 = self.Up_sample_2(x4_3)
-        out4 = self.Up_sample_2(x4_4)
-
-        return out1, out2, out3, out4

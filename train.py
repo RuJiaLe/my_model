@@ -45,8 +45,8 @@ Decoder_Model = Video_Decoder_Model()
 
 # 加载预训练模型
 if args.load_pre_train_model:
-    Encoder_path = "./save_models/pretrain_model/pre_encoder_model_15.pth"
-    Decoder_path = "./save_models/pretrain_model/pre_decoder_model_15.pth"
+    Encoder_path = "./save_models/pretrain_model/best_pre_encoder_model.pth"
+    Decoder_path = "./save_models/pretrain_model/best_pre_decoder_model.pth"
     print('Loading state dict from: {}'.format(Encoder_path))
 
     Encoder_Model.load_state_dict(torch.load(Encoder_path, map_location=torch.device(device)))
@@ -63,8 +63,8 @@ if args.load_pre_train_model:
 
 # 加载训练模型
 if args.load_train_model:
-    Encoder_path = args.save_model + "/encoder_model_15.pth"
-    Decoder_path = args.save_model + "/decoder_model_15.pth"
+    Encoder_path = args.save_model + "/best_encoder_model.pth"
+    Decoder_path = args.save_model + "/best_decoder_model.pth"
     print('Loading state dict from: {}'.format(Encoder_path))
     Encoder_Model.load_state_dict(torch.load(Encoder_path, map_location=torch.device(device)))
     print('Loading state dict from: {}'.format(Decoder_path))
@@ -90,7 +90,6 @@ def val(dataloader, val_encoder, val_decoder):
 
     start_time = time.time()
     for i, packs in enumerate(dataloader):
-        in_time = time.time()
         images, gts = [], []
         for pack in packs:
             img_num = img_num + 1
@@ -125,11 +124,11 @@ def val(dataloader, val_encoder, val_decoder):
             S_measure = Eval_S_measure(predict, gt)
             S_measures += S_measure
 
-            speed = out_time - in_time
-            print('#val# {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}, speed: {}'.
-                  format(datetime.now().strftime('%m/%d %H:%M'), (img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure, speed))
-            logging.info('#val# {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}, speed: {}'.
-                         format(datetime.now().strftime('%m/%d %H:%M'), (img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure, speed))
+            if img_num % 10 == 0:
+                print('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
+                      format((img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
+                logging.info('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
+                             format((img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
 
     avg_mae = MAES / img_num
 
@@ -146,15 +145,19 @@ def val(dataloader, val_encoder, val_decoder):
     end_time = time.time()
     total_speed = end_time - start_time
 
+    total_loss = (1 - avg_mae) + max_F_measure + avg_S_measure + avg_S_measure
+
+    print('*' * 50)
     print('#val# {}, total_img: {}, avg_mae: {:0.4f}, max_F_measure: {:0.4f}, avg_E_measure: {:0.4f}, avg_S_measure: {:0.4f}, total_speed: {:0.4f}'.
           format(datetime.now().strftime('%m/%d %H:%M'), img_num, avg_mae, max_F_measure, avg_E_measure, avg_S_measure, total_speed))
+    print('#val# total_loss: {:0.4f}'.format(total_loss))
+    print('*' * 50)
 
     logging.info('{}'.format('*' * 100))
     logging.info('#val# {}, total_img: {} avg_mae: {:0.4f}, max_F_measure: {:0.4f}, avg_E_measure: {:0.4f}, avg_S_measure: {:0.4f}, total_speed: {:0.4f}'.
                  format(datetime.now().strftime('%m/%d %H:%M'), img_num, avg_mae, max_F_measure, avg_E_measure, avg_S_measure, total_speed))
+    logging.info('#val# total_loss: {:0.4f}'.format(total_loss))
     logging.info('{}'.format('*' * 100))
-
-    total_loss = (1 - avg_mae) + max_F_measure + avg_S_measure + avg_S_measure
 
     return total_loss
 
@@ -203,7 +206,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
         optimizer_decoder.step()
 
         # 显示内容
-        if i % 1 == 0 or i == total_step:
+        if i % 10 == 0 or i == total_step:
             print('#Train# {}, Epoch: [{}/{}], Done: {:0.2f}%, Step: [{}/{}], Loss: {:0.4f}'.
                   format(datetime.now().strftime('%m/%d %H:%M'),
                          Epoch, args.epoch, (i / total_step) * 100, i,
@@ -214,17 +217,21 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
                                 Epoch, args.epoch, (i / total_step) * 100, i,
                                 total_step, torch.mean(torch.tensor(losses))))
     # 验证
-    if Epoch % 2 == 0:
+    if Epoch % 1 == 0:
         val_loss = val(val_data, encoder_model, decoder_model)
         global best_model
-        if best_model['loss'] < val_loss:
-            best_model['loss'] = val_loss
-            best_model['e_model'] = encoder_model.state_dict()
-            best_model['d_model'] = decoder_model.state_dict()
+        if best_model['loss'] > val_loss:
+            best_model['flag'] += 1
+
+        if best_model['loss'] < val_loss or best_model['flag'] < 2:
+            if best_model['loss'] < val_loss:
+                best_model['loss'] = val_loss
+                best_model['e_model'] = encoder_model.state_dict()
+                best_model['d_model'] = decoder_model.state_dict()
         else:
             torch.save(best_model['e_model'], args.save_model + '/best_encoder_model.pth')
             torch.save(best_model['d_model'], args.save_model + '/best_decoder_model.pth')
-            logging.info('best_model_Epoch'.format(Epoch))
+            logging.info('best_model_Epoch: {}'.format(Epoch))
             print('find best model!!!')
             return True
 
@@ -251,7 +258,8 @@ if __name__ == '__main__':
                                transforms=val_transforms)
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
-    best_model = {"loss": 0, 'e_model': Encoder_Model.state_dict(), 'd_model': Decoder_Model.state_dict()}
+    best_model = {"loss": 0, 'e_model': Encoder_Model.state_dict(), 'd_model': Decoder_Model.state_dict(), 'flag': 0}
+
     flag = False
 
     for epoch in range(1, args.epoch + 1):
@@ -259,6 +267,7 @@ if __name__ == '__main__':
         adjust_lr(optimizer_Decoder, epoch, args.decay_rate, args.decay_epoch)
 
         flag = train(train_dataloader, val_dataloader, Encoder_Model, Decoder_Model, optimizer_Encoder, optimizer_Decoder, epoch)
+
         if flag:
             break
 

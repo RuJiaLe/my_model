@@ -11,7 +11,7 @@ class ConvGRUCell(nn.Module):
     Generate a convolutional GRU cell
     """
 
-    def __init__(self, input_size, hidden_size, kernel_size=3):
+    def __init__(self, input_size, hidden_size, kernel_size=1):
         super().__init__()
         padding = kernel_size // 2
         self.input_size = input_size

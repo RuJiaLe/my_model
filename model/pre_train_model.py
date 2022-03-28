@@ -46,10 +46,10 @@ class Video_Decoder_Model(nn.Module):
         super(Video_Decoder_Model, self).__init__()
 
         # --------------------第四解码阶段--------------------
-        self.decoder4_1 = Video_Decoder_Part(2048, 1024)
-        self.decoder4_2 = Video_Decoder_Part(2048, 1024)
-        self.decoder4_3 = Video_Decoder_Part(2048, 1024)
-        self.decoder4_4 = Video_Decoder_Part(2048, 1024)
+        self.decoder4_1 = Video_Decoder_Part(1024, 1024)
+        self.decoder4_2 = Video_Decoder_Part(1024, 1024)
+        self.decoder4_3 = Video_Decoder_Part(1024, 1024)
+        self.decoder4_4 = Video_Decoder_Part(1024, 1024)
 
         # --------------------第三解码阶段--------------------
         self.CR3_1 = CR2(2048, 1024)

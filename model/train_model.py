@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from .utils import Video_Encoder_Part, self_attention, Video_Decoder_Part
 from .utils import CR4, CR2, CS
-from .ConvLSTM import ConvLSTMCell
 from .ConvGRU import ConvGRUCell
 
 
@@ -47,10 +46,10 @@ class Video_Decoder_Model(nn.Module):
         super(Video_Decoder_Model, self).__init__()
 
         # --------------------第四解码阶段--------------------
-        self.decoder4_1 = Video_Decoder_Part(2048, 1024)
-        self.decoder4_2 = Video_Decoder_Part(2048, 1024)
-        self.decoder4_3 = Video_Decoder_Part(2048, 1024)
-        self.decoder4_4 = Video_Decoder_Part(2048, 1024)
+        self.decoder4_1 = Video_Decoder_Part(1024, 1024)
+        self.decoder4_2 = Video_Decoder_Part(1024, 1024)
+        self.decoder4_3 = Video_Decoder_Part(1024, 1024)
+        self.decoder4_4 = Video_Decoder_Part(1024, 1024)
 
         self.ConvGRU4_1 = ConvGRUCell(1024, 1024)
         self.ConvGRU4_2 = ConvGRUCell(1024, 1024)
@@ -67,11 +66,6 @@ class Video_Decoder_Model(nn.Module):
         self.decoder3_2 = Video_Decoder_Part(1024, 512)
         self.decoder3_3 = Video_Decoder_Part(1024, 512)
         self.decoder3_4 = Video_Decoder_Part(1024, 512)
-
-        # self.ConvLSTM3_1 = ConvLSTMCell(512, 512)
-        # self.ConvLSTM3_2 = ConvLSTMCell(512, 512)
-        # self.ConvLSTM3_3 = ConvLSTMCell(512, 512)
-        # self.ConvLSTM3_4 = ConvLSTMCell(512, 512)
 
         self.ConvGRU3_1 = ConvGRUCell(512, 512)
         self.ConvGRU3_2 = ConvGRUCell(512, 512)
@@ -105,15 +99,10 @@ class Video_Decoder_Model(nn.Module):
         self.decoder1_3 = Video_Decoder_Part(256, 128)
         self.decoder1_4 = Video_Decoder_Part(256, 128)
 
-        # self.ConvLSTM1_1 = ConvLSTMCell(128, 128)
-        # self.ConvLSTM1_2 = ConvLSTMCell(128, 128)
-        # self.ConvLSTM1_3 = ConvLSTMCell(128, 128)
-        # self.ConvLSTM1_4 = ConvLSTMCell(128, 128)
-
-        self.ConvGRU1_1 = ConvGRUCell(128, 128)
-        self.ConvGRU1_2 = ConvGRUCell(128, 128)
-        self.ConvGRU1_3 = ConvGRUCell(128, 128)
-        self.ConvGRU1_4 = ConvGRUCell(128, 128)
+        self.ConvGRU1_1 = ConvGRUCell(128, 128, kernel_size=3)
+        self.ConvGRU1_2 = ConvGRUCell(128, 128, kernel_size=3)
+        self.ConvGRU1_3 = ConvGRUCell(128, 128, kernel_size=3)
+        self.ConvGRU1_4 = ConvGRUCell(128, 128, kernel_size=3)
 
         # --------------------refine--------------------
 
@@ -122,10 +111,10 @@ class Video_Decoder_Model(nn.Module):
         self.decoder0_3 = Video_Decoder_Part(128, 64)
         self.decoder0_4 = Video_Decoder_Part(128, 64)
 
-        self.ConvGRU0_1 = ConvGRUCell(128, 128)
-        self.ConvGRU0_2 = ConvGRUCell(128, 128)
-        self.ConvGRU0_3 = ConvGRUCell(128, 128)
-        self.ConvGRU0_4 = ConvGRUCell(128, 128)
+        self.ConvGRU0_1 = ConvGRUCell(128, 128, kernel_size=3)
+        self.ConvGRU0_2 = ConvGRUCell(128, 128, kernel_size=3)
+        self.ConvGRU0_3 = ConvGRUCell(128, 128, kernel_size=3)
+        self.ConvGRU0_4 = ConvGRUCell(128, 128, kernel_size=3)
 
         # --------------------output阶段--------------------
         self.CS4_1 = CS(1024, 1)
@@ -165,12 +154,17 @@ class Video_Decoder_Model(nn.Module):
             if isinstance(m[1], nn.BatchNorm2d):
                 m[1].eval()
 
-    def forward(self, block):  # (1, 2048, 8, 8)
+    def forward(self, block):  # (1, 1024, 8, 8)
         # --------------------第四解码阶段--------------------
         x4_1 = self.decoder4_1(block[3])  # (1, 1024, 16, 16)
         x4_2 = self.decoder4_2(block[3])
         x4_3 = self.decoder4_3(block[3])
         x4_4 = self.decoder4_4(block[3])
+
+        # out4_1 = x4_1
+        # out4_2 = x4_2 + (x4_2 - x4_1)
+        # out4_3 = x4_3 + (x4_3 - x4_2)
+        # out4_4 = x4_4 + (x4_4 - x4_3)
 
         out4_1 = self.ConvGRU4_1(x4_1, None)
         out4_2 = self.ConvGRU4_2(x4_2 + (x4_2 - x4_1), out4_1)
@@ -178,12 +172,12 @@ class Video_Decoder_Model(nn.Module):
         out4_4 = self.ConvGRU4_4(x4_4 + (x4_4 - x4_3), out4_3)
 
         # --------------------第三解码阶段--------------------
-        x3_1 = torch.cat((out4_1, block[2]), dim=1)
+        x3_1 = torch.cat((out4_1, block[2]), dim=1)  # (1, 2048, 16, 16)
         x3_2 = torch.cat((out4_2, block[2]), dim=1)
         x3_3 = torch.cat((out4_3, block[2]), dim=1)
         x3_4 = torch.cat((out4_4, block[2]), dim=1)
 
-        x3_1 = self.CR3_1(x3_1)
+        x3_1 = self.CR3_1(x3_1)  # (1. 1024, 32, 32)
         x3_2 = self.CR3_2(x3_2)
         x3_3 = self.CR3_3(x3_3)
         x3_4 = self.CR3_4(x3_4)
@@ -193,27 +187,23 @@ class Video_Decoder_Model(nn.Module):
         x3_3 = self.decoder3_3(x3_3)
         x3_4 = self.decoder3_4(x3_4)
 
-        # state = None
-        # state = self.ConvLSTM3_1(x3_1, state)
-        # out3_1 = state[0]
-        # state = self.ConvLSTM3_2(x3_2, state)
-        # out3_2 = state[0]
-        # state = self.ConvLSTM3_3(x3_3, state)
-        # out3_3 = state[0]
-        # state = self.ConvLSTM3_4(x3_4, state)
-        # out3_4 = state[0]
+        # out3_1 = x3_1
+        # out3_2 = x3_2 + (x3_2 - x3_1)
+        # out3_3 = x3_3 + (x3_3 - x3_2)
+        # out3_4 = x3_4 + (x3_4 - x3_3)
+
         out3_1 = self.ConvGRU3_1(x3_1, None)
-        out3_2 = self.ConvGRU3_2(x3_2, out3_1)
-        out3_3 = self.ConvGRU3_3(x3_3, out3_2)
-        out3_4 = self.ConvGRU3_4(x3_4, out3_3)
+        out3_2 = self.ConvGRU3_2(x3_2 + (x3_2 - x3_1), out3_1)
+        out3_3 = self.ConvGRU3_3(x3_3 + (x3_3 - x3_2), out3_2)
+        out3_4 = self.ConvGRU3_4(x3_4 + (x3_4 - x3_3), out3_3)
 
         # --------------------第二解码阶段--------------------
-        x2_1 = torch.cat((out3_1, block[1]), dim=1)
+        x2_1 = torch.cat((out3_1, block[1]), dim=1)  # (1, 1024, 32, 32)
         x2_2 = torch.cat((out3_2, block[1]), dim=1)
         x2_3 = torch.cat((out3_3, block[1]), dim=1)
         x2_4 = torch.cat((out3_4, block[1]), dim=1)
 
-        x2_1 = self.CR2_1(x2_1)
+        x2_1 = self.CR2_1(x2_1)  # (1, 512, 32, 32)
         x2_2 = self.CR2_2(x2_2)
         x2_3 = self.CR2_3(x2_3)
         x2_4 = self.CR2_4(x2_4)
@@ -229,12 +219,12 @@ class Video_Decoder_Model(nn.Module):
         out2_4 = self.ConvGRU2_4(x2_4 + (x2_4 - x2_3), out2_3)
 
         # --------------------第一解码阶段--------------------
-        x1_1 = torch.cat((out2_1, block[0]), dim=1)
+        x1_1 = torch.cat((out2_1, block[0]), dim=1)  # (1, 512, 64, 64)
         x1_2 = torch.cat((out2_2, block[0]), dim=1)
         x1_3 = torch.cat((out2_3, block[0]), dim=1)
         x1_4 = torch.cat((out2_4, block[0]), dim=1)
 
-        x1_1 = self.CR1_1(x1_1)
+        x1_1 = self.CR1_1(x1_1)  # (1, 128, 64, 64)
         x1_2 = self.CR1_2(x1_2)
         x1_3 = self.CR1_3(x1_3)
         x1_4 = self.CR1_4(x1_4)
@@ -243,16 +233,6 @@ class Video_Decoder_Model(nn.Module):
         x1_2 = self.decoder1_2(x1_2)
         x1_3 = self.decoder1_3(x1_3)
         x1_4 = self.decoder1_4(x1_4)
-
-        # state = None
-        # state = self.ConvLSTM1_1(x1_1, state)
-        # out1_1 = state[0]
-        # state = self.ConvLSTM1_2(x1_2, state)
-        # out1_2 = state[0]
-        # state = self.ConvLSTM1_3(x1_3, state)
-        # out1_3 = state[0]
-        # state = self.ConvLSTM1_4(x1_4, state)
-        # out1_4 = state[0]
 
         out1_1 = self.ConvGRU1_1(x1_1, None)
         out1_2 = self.ConvGRU1_2(x1_2, out1_1)

@@ -1,37 +1,50 @@
+from model.utils import block_aspp_moudle, CS_attention_module
 import torch
+import time
+from model.ConvGRU import ConvGRUCell
 
-from model.utils import self_attention, Video_Encoder_Part
-from model.train_model import Video_Encoder_Model, Video_Decoder_Model
 
-x1 = torch.rand(1, 3, 256, 256)
-x2 = torch.rand(1, 3, 256, 256)
-x3 = torch.rand(1, 3, 256, 256)
-x4 = torch.rand(1, 3, 256, 256)
+def count_param(model):
+    param_count = 0
+    for param in model.parameters():
+        param_count += param.view(-1).size()[0]
+    return param_count
 
-# A = self_attention()
+
+# y = 0
 #
-# out = A(x1, x2, x3, x4)
-# print(out.size())
-
-Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=12, pretrained=True)
-Decoder_Model = Video_Decoder_Model()
-
-x = [x1, x2, x3, x4]
-block = Encoder_Model(x)
-out = Decoder_Model(block)
-
-print(f'out1_size: {block[0].size()}')
-print(f'out2_size: {block[1].size()}')
-print(f'out3_size: {block[2].size()}')
-print(f'out4_size: {block[3].size()}')
-
-# from model.ConvGRU import ConvGRUCell
-# import torch
+# aspp = block_aspp_moudle(in_dim=2048, out_dim=1024, output_stride=16)
+# ATT = CS_attention_module(in_channels=1024)
 #
-# x1 = torch.rand(1, 3, 256, 256)
+# start = time.time()
 #
-# model = ConvGRUCell(3, 3)
+# for i in range(10):
+#     x = torch.rand(1, 1024, 128, 128)
+#     # y = aspp(x)
+#     y = ATT(x)
 #
-# state = model(x1, x1)
+# end = time.time()
 #
-# print(state.size())
+# print(y.size())
+# print((end - start) / 10)
+# print(f'aspp_parameter: {count_param(ATT)}')
+
+out1_1 = torch.rand(1, 1024, 8, 8)
+out1_2 = torch.rand(1, 1024, 8, 8)
+out1_3 = torch.rand(1, 1024, 8, 8)
+out1_4 = torch.rand(1, 1024, 8, 8)
+
+ConvGRU = ConvGRUCell(1024, 1024)
+
+start = time.time()
+
+for i in range(10):
+    out0_1 = ConvGRU(out1_1, None)
+    out0_2 = ConvGRU(out1_2, out0_1)
+    out0_3 = ConvGRU(out1_3, out0_2)
+    out0_4 = ConvGRU(out1_4, out0_3)
+
+end = time.time()
+
+print((end - start) / 10.0)
+print(f'GRU_parameter: {count_param(ConvGRU)}')
