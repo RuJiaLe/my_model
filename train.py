@@ -216,31 +216,25 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
                          format(datetime.now().strftime('%m/%d %H:%M'),
                                 Epoch, args.epoch, (i / total_step) * 100, i,
                                 total_step, torch.mean(torch.tensor(losses))))
-    # 验证
+
+    # 验证与模型保存
     if Epoch % 1 == 0:
         val_loss = val(val_data, encoder_model, decoder_model)
-        global best_model
-        if best_model['loss'] > val_loss:
-            best_model['flag'] += 1
+        global best_val_loss
 
-        if best_model['loss'] < val_loss or best_model['flag'] < 2:
-            if best_model['loss'] < val_loss:
-                best_model['loss'] = val_loss
-                best_model['e_model'] = encoder_model.state_dict()
-                best_model['d_model'] = decoder_model.state_dict()
-        else:
-            torch.save(best_model['e_model'], args.save_model + '/best_encoder_model.pth')
-            torch.save(best_model['d_model'], args.save_model + '/best_decoder_model.pth')
-            logging.info('best_model_Epoch: {}'.format(Epoch))
-            print('find best model!!!')
-            return True
+        if best_val_loss < val_loss:  # big is best
+            best_val_loss = val_loss
+            torch.save(encoder_model.state_dict(), args.save_model + '/best_encoder_model.pth')
+            torch.save(decoder_model.state_dict(), args.save_model + '/best_decoder_model.pth')
+            print('this is best_model_Epoch: {}'.format(Epoch))
+            logging.info('this is best_model_Epoch: {}'.format(Epoch))
 
     # 模型保存
-    if Epoch % 10 == 0:
-        torch.save(encoder_model.state_dict(),
-                   args.save_model + '/encoder_model' + '_%d' % (Epoch + 0) + '.pth')
-        torch.save(decoder_model.state_dict(),
-                   args.save_model + '/decoder_model' + '_%d' % (Epoch + 0) + '.pth')
+    # if Epoch % 10 == 0:
+    #     torch.save(encoder_model.state_dict(),
+    #                args.save_model + '/encoder_model' + '_%d' % (Epoch + 0) + '.pth')
+    #     torch.save(decoder_model.state_dict(),
+    #                args.save_model + '/decoder_model' + '_%d' % (Epoch + 0) + '.pth')
 
 
 if __name__ == '__main__':
@@ -258,17 +252,12 @@ if __name__ == '__main__':
                                transforms=val_transforms)
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
-    best_model = {"loss": 0, 'e_model': Encoder_Model.state_dict(), 'd_model': Decoder_Model.state_dict(), 'flag': 0}
-
-    flag = False
+    best_val_loss = 0.0
 
     for epoch in range(1, args.epoch + 1):
         adjust_lr(optimizer_Encoder, epoch, args.decay_rate, args.decay_epoch)
         adjust_lr(optimizer_Decoder, epoch, args.decay_rate, args.decay_epoch)
 
-        flag = train(train_dataloader, val_dataloader, Encoder_Model, Decoder_Model, optimizer_Encoder, optimizer_Decoder, epoch)
-
-        if flag:
-            break
+        train(train_dataloader, val_dataloader, Encoder_Model, Decoder_Model, optimizer_Encoder, optimizer_Decoder, epoch)
 
     print('-------------Congratulations! Training Done!!!-------------')

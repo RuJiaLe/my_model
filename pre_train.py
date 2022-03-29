@@ -25,7 +25,6 @@ parser.add_argument('--clip', type=float, default=0.5, help='gradient clipping m
 parser.add_argument('--decay_rate', type=float, default=0.9, help='decay rate of learning rate')
 parser.add_argument('--decay_epoch', type=int, default=15, help='every n epochs decay learning rate')
 parser.add_argument('--save_model', type=str, default="./save_models/pretrain_model", help='save_Encoder_model_path')
-parser.add_argument('--load_model', type=bool, default=False, help='load_model')
 parser.add_argument('--log_dir', type=str, default="./Log_file", help="log_dir file")
 
 args = parser.parse_args()
@@ -43,13 +42,12 @@ Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=12, pretrai
 Decoder_Model = Video_Decoder_Model()
 
 # 加载训练模型
-# if args.load_model:
-#     Encoder_path = args.save_model + "/pre_encoder_model_15.pth"
-#     Decoder_path = args.save_model + "/pre_decoder_model_15.pth"
-#     print('Loading state dict from: {0}'.format(Encoder_path))
-#     Encoder_Model.load_state_dict(torch.load(Encoder_path, map_location=torch.device(device)))
-#     print('Loading state dict from: {0}'.format(Decoder_path))
-#     Decoder_Model.load_state_dict(torch.load(Decoder_path, map_location=torch.device(device)))
+# Encoder_path = args.save_model + "/best_pre_encoder_model.pth"
+# Decoder_path = args.save_model + "/best_pre_decoder_model.pth"
+# print('Loading state dict from: {0}'.format(Encoder_path))
+# Encoder_Model.load_state_dict(torch.load(Encoder_path, map_location=torch.device(device)))
+# print('Loading state dict from: {0}'.format(Decoder_path))
+# Decoder_Model.load_state_dict(torch.load(Decoder_path, map_location=torch.device(device)))
 
 if torch.cuda.is_available():
     Encoder_Model.cuda()
@@ -200,28 +198,23 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
     # 验证
     if Epoch % 1 == 0:
         val_loss = val(val_data, encoder_model, decoder_model)
-        global best_model
-        if best_model['loss'] > val_loss:
-            best_model['flag'] += 1
+        global best_val_loss
 
-        if best_model['loss'] < val_loss or best_model['flag'] < 2:
-            if best_model['loss'] < val_loss:
-                best_model['loss'] = val_loss
-                best_model['e_model'] = encoder_model.state_dict()
-                best_model['d_model'] = decoder_model.state_dict()
-        else:
-            torch.save(best_model['e_model'], args.save_model + '/best_pre_encoder_model.pth')
-            torch.save(best_model['d_model'], args.save_model + '/best_pre_decoder_model.pth')
-            logging.info('best_model_Epoch: {}'.format(Epoch))
+        if best_val_loss < val_loss:
+            best_val_loss = val_loss
+
+            torch.save(encoder_model.state_dict(), args.save_model + '/best_pre_encoder_model.pth')
+            torch.save(decoder_model.state_dict(), args.save_model + '/best_pre_decoder_model.pth')
+            print('this is best_model_Epoch: {}'.format(Epoch))
+            logging.info('this is best_model_Epoch: {}'.format(Epoch))
             print('find best model!!!')
-            return True
 
     # 模型保存
-    if Epoch % 5 == 0:
-        torch.save(encoder_model.state_dict(),
-                   args.save_model + '/pre_encoder_model' + '_%d' % (Epoch + 0) + '.pth')
-        torch.save(decoder_model.state_dict(),
-                   args.save_model + '/pre_decoder_model' + '_%d' % (Epoch + 0) + '.pth')
+    # if Epoch % 5 == 0:
+    #     torch.save(encoder_model.state_dict(),
+    #                args.save_model + '/pre_encoder_model' + '_%d' % (Epoch + 0) + '.pth')
+    #     torch.save(decoder_model.state_dict(),
+    #                args.save_model + '/pre_decoder_model' + '_%d' % (Epoch + 0) + '.pth')
 
 
 if __name__ == '__main__':
@@ -239,15 +232,12 @@ if __name__ == '__main__':
                                    image_transform=pre_val_transforms)
     pre_val_dataloader = DataLoader(dataset=pre_val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
-    best_model = {"loss": 0, 'e_model': Encoder_Model.state_dict(), 'd_model': Decoder_Model.state_dict(), 'flag': 0}
-    flag = False
+    best_val_loss = 0.0
 
     for epoch in range(1, args.epoch + 1):
         adjust_lr(optimizer_Encoder, epoch, args.decay_rate, args.decay_epoch)
         adjust_lr(optimizer_Decoder, epoch, args.decay_rate, args.decay_epoch)
 
-        flag = train(pre_train_dataloader, pre_val_dataloader, Encoder_Model, Decoder_Model, optimizer_Encoder, optimizer_Decoder, epoch)
-        if flag:
-            break
+        train(pre_train_dataloader, pre_val_dataloader, Encoder_Model, Decoder_Model, optimizer_Encoder, optimizer_Decoder, epoch)
 
     print('-------------Congratulations! Training Done!!!-------------')
