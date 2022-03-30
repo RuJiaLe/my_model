@@ -69,7 +69,7 @@ def val(dataloader, val_encoder, val_decoder):
 
     start_time = time.time()
     for i, packs in enumerate(dataloader):
-        images, gts = [], []
+        images, gts, blocks = [], [], []
         for pack in packs:
             img_num = img_num + 1
             image, gt = pack["image"], pack["gt"]
@@ -79,12 +79,13 @@ def val(dataloader, val_encoder, val_decoder):
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
+            block = val_encoder(images)
+            blocks.append(block)
             images.append(image)
             gts.append(gt)
 
-        # 编码解码
-        block = val_encoder(images)
-        out4, out3, out2, out1, out0 = val_decoder(block)
+        # 解码
+        out4, out3, out2, out1, out0 = val_decoder(blocks)
 
         # Loss 计算
         predicts = out0
@@ -148,7 +149,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
     decoder_model.freeze_bn()
 
     total_step = len(train_data)
-    losses = []
+    losses = 0.0
 
     for i, packs in enumerate(train_data):
         i = i + 1
@@ -156,7 +157,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
         optimizer_encoder.zero_grad()
         optimizer_decoder.zero_grad()
 
-        images, gts = [], []
+        images, gts, blocks = [], [], []
         for pack in packs:
             image, gt = pack["image"], pack["gt"]
 
@@ -165,18 +166,20 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
+            block = encoder_model(images)
+
             images.append(image)
             gts.append(gt)
+            blocks.append(block)
 
-        # 编码解码
-        block = encoder_model(images)
-        out4, out3, out2, out1, out0 = decoder_model(block)
+        # 解码
+        out4, out3, out2, out1, out0 = decoder_model(blocks)
 
         # Loss 计算
         loss = []
         frame1_loss, frame2_loss, frame3_loss, frame4_loss = multi_bce_loss_fusion(out4, out3, out2, out1, out0, gts)
         loss = [frame1_loss, frame2_loss, frame3_loss, frame4_loss]
-        losses += loss
+        losses = losses + (frame1_loss.data + frame2_loss.data + frame3_loss.data + frame4_loss.data) / len(loss)
 
         # 反向传播
         torch.autograd.backward(loss)
@@ -189,12 +192,12 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
             print('#Train# {}, Epoch: [{}/{}], Done: {:0.2f}%, Step: [{}/{}], Loss: {:0.4f}'.
                   format(datetime.now().strftime('%m/%d %H:%M'),
                          Epoch, args.epoch, (i / total_step) * 100, i,
-                         total_step, torch.mean(torch.tensor(losses))))
+                         total_step, losses / i))
 
             logging.info('#Train# {}, Epoch: [{}/{}], Done: {:0.2f}%, Step: [{}/{}], Loss: {:0.4f}'.
                          format(datetime.now().strftime('%m/%d %H:%M'),
                                 Epoch, args.epoch, (i / total_step) * 100, i,
-                                total_step, torch.mean(torch.tensor(losses))))
+                                total_step, losses / i))
     # 验证
     if Epoch % 1 == 0:
         val_loss = val(val_data, encoder_model, decoder_model)
@@ -208,13 +211,6 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
             print('this is best_model_Epoch: {}'.format(Epoch))
             logging.info('this is best_model_Epoch: {}'.format(Epoch))
             print('find best model!!!')
-
-    # 模型保存
-    # if Epoch % 5 == 0:
-    #     torch.save(encoder_model.state_dict(),
-    #                args.save_model + '/pre_encoder_model' + '_%d' % (Epoch + 0) + '.pth')
-    #     torch.save(decoder_model.state_dict(),
-    #                args.save_model + '/pre_decoder_model' + '_%d' % (Epoch + 0) + '.pth')
 
 
 if __name__ == '__main__':

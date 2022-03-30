@@ -90,7 +90,7 @@ def val(dataloader, val_encoder, val_decoder):
 
     start_time = time.time()
     for i, packs in enumerate(dataloader):
-        images, gts = [], []
+        images, gts, blocks = [], [], []
         for pack in packs:
             img_num = img_num + 1
             image, gt = pack["image"], pack["gt"]
@@ -100,12 +100,13 @@ def val(dataloader, val_encoder, val_decoder):
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
+            block = val_encoder(images)
             images.append(image)
             gts.append(gt)
+            blocks.append(block)
 
-        # 解码 编码
-        block = val_encoder(images)
-        out4, out3, out2, ou1, out0 = val_decoder(block)
+        # 解码
+        out4, out3, out2, ou1, out0 = val_decoder(blocks)
         out_time = time.time()
 
         # Loss 计算
@@ -170,7 +171,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
     decoder_model.freeze_bn()
 
     total_step = len(train_data)
-    losses = []
+    losses = 0.0
 
     for i, packs in enumerate(train_data):
         i = i + 1
@@ -178,7 +179,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
         optimizer_encoder.zero_grad()
         optimizer_decoder.zero_grad()
 
-        images, gts = [], []
+        images, gts, blocks = [], [], []
         for pack in packs:
             image, gt = pack["image"], pack["gt"]
 
@@ -186,18 +187,21 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
                 image, gt = Variable(image.cuda(), requires_grad=False), Variable(gt.cuda(), requires_grad=False)
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
+
+            block = encoder_model(images)
+
             images.append(image)
             gts.append(gt)
+            blocks.append(block)
 
-        # 编码与解码
-        block = encoder_model(images)
-        out4, out3, out2, out1, out0 = decoder_model(block)  # 第4阶段, 第3阶段, 第2阶段, 第1阶段, 第0阶段
+        # 解码
+        out4, out3, out2, out1, out0 = decoder_model(blocks)  # 第4阶段, 第3阶段, 第2阶段, 第1阶段, 第0阶段
 
         # Loss 计算
         loss = []
         frame1_loss, frame2_loss, frame3_loss, frame4_loss = multi_bce_loss_fusion(out4, out3, out2, out1, out0, gts)
         loss = [frame1_loss, frame2_loss, frame3_loss, frame4_loss]
-        losses += loss
+        losses = losses + (frame1_loss + frame2_loss + frame3_loss + frame4_loss) / len(loss)
 
         # 反向传播
         torch.autograd.backward(loss)
@@ -210,12 +214,12 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
             print('#Train# {}, Epoch: [{}/{}], Done: {:0.2f}%, Step: [{}/{}], Loss: {:0.4f}'.
                   format(datetime.now().strftime('%m/%d %H:%M'),
                          Epoch, args.epoch, (i / total_step) * 100, i,
-                         total_step, torch.mean(torch.tensor(losses))))
+                         total_step, losses / i))
 
             logging.info('#Train# {}, Epoch: [{}/{}], Done: {:0.2f}%, Step: [{}/{}], Loss: {:0.4f}'.
                          format(datetime.now().strftime('%m/%d %H:%M'),
                                 Epoch, args.epoch, (i / total_step) * 100, i,
-                                total_step, torch.mean(torch.tensor(losses))))
+                                total_step, losses / i))
 
     # 验证与模型保存
     if Epoch % 1 == 0:
@@ -224,17 +228,10 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
 
         if best_val_loss < val_loss:  # big is best
             best_val_loss = val_loss
-            torch.save(encoder_model.state_dict(), args.save_model + '/best_encoder_model.pth')
-            torch.save(decoder_model.state_dict(), args.save_model + '/best_decoder_model.pth')
+            torch.save(encoder_model.state_dict(), args.save_model + '/best_encoder_model' + '_%d' % Epoch + '.pth')
+            torch.save(decoder_model.state_dict(), args.save_model + '/best_decoder_model' + '_%d' % Epoch + '.pth')
             print('this is best_model_Epoch: {}'.format(Epoch))
             logging.info('this is best_model_Epoch: {}'.format(Epoch))
-
-    # 模型保存
-    # if Epoch % 10 == 0:
-    #     torch.save(encoder_model.state_dict(),
-    #                args.save_model + '/encoder_model' + '_%d' % (Epoch + 0) + '.pth')
-    #     torch.save(decoder_model.state_dict(),
-    #                args.save_model + '/decoder_model' + '_%d' % (Epoch + 0) + '.pth')
 
 
 if __name__ == '__main__':

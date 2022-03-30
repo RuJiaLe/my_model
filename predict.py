@@ -58,7 +58,7 @@ def predict(dataloader, encoder_model, decoder_model, dataset):
 
     for i, packs in enumerate(dataloader):
         i = i + 1
-        images, paths, gts = [], [], []
+        images, paths, gts, blocks = [], [], [], []
         in_time = time.time()
         for pack in packs:
             image, gt, path = pack["image"], pack["gt"], pack["path"][0]
@@ -68,13 +68,15 @@ def predict(dataloader, encoder_model, decoder_model, dataset):
             else:
                 image = Variable(image, requires_grad=False)
 
+            block = encoder_model(images)
+
             images.append(image)
             paths.append(path)
             gts.append(gt)
+            blocks.append(block)
 
-        # 解码 编码
-        block = encoder_model(images)
-        out4, out3, out2, out2, out0 = decoder_model(block)
+        # 解码
+        out4, out3, out2, out2, out0 = decoder_model(blocks)
 
         # 显示内容
         out_time = time.time()

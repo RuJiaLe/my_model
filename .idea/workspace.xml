@@ -1,9 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="2022/3/28 18;14">
+    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="2022/3/29 9:53">
+      <change afterPath="$PROJECT_DIR$/model/resnet_dilation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/Resnet.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/pre_train_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/pre_train_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/train_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/train_model.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pre_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/pre_train.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/predict.py" beforeDir="false" afterPath="$PROJECT_DIR$/predict.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/speed.py" beforeDir="false" afterPath="$PROJECT_DIR$/speed.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -116,7 +125,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="train" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="test2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="my_model" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -128,7 +137,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test2.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -140,10 +149,10 @@
     <recent_temporary>
       <list>
         <item itemvalue="Python.speed" />
+        <item itemvalue="Python.test2" />
         <item itemvalue="Python.pre_train" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.pre_predict" />
-        <item itemvalue="Python.train" />
       </list>
     </recent_temporary>
   </component>
@@ -303,7 +312,14 @@
       <option name="project" value="LOCAL" />
       <updated>1648462476191</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="2022/3/29 9:53">
+      <created>1648518837690</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1648518837690</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -337,6 +353,7 @@
     <MESSAGE value="2022/3/27 15:56" />
     <MESSAGE value="2022/3/28 16:28" />
     <MESSAGE value="2022/3/28 18;14" />
-    <option name="LAST_COMMIT_MESSAGE" value="2022/3/28 18;14" />
+    <MESSAGE value="2022/3/29 9:53" />
+    <option name="LAST_COMMIT_MESSAGE" value="2022/3/29 9:53" />
   </component>
 </project>
