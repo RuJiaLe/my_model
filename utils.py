@@ -108,7 +108,7 @@ class SSIM(torch.nn.Module):
 
 # ******************************图片保存******************************
 def Save_result(img, frame_image_path, save_path):
-    path_split = frame_image_path.split("/")[2:]
+    path_split = frame_image_path.split("/")[3:]
 
     image_save_path = os.path.join(save_path, path_split[0], path_split[1], "predicts")
 
@@ -122,6 +122,10 @@ def Save_result(img, frame_image_path, save_path):
     img = (img - img.min()) / (img.max() - img.min() + 1e-8)
     img = img * 255.0
     img = img.astype(np.uint8)
+
+    img[img >= 128] = 255
+    img[img < 128] = 0
+
     img = Image.fromarray(img)
     img.save(image_save_path)
 

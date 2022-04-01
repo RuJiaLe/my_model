@@ -17,8 +17,8 @@ parser.add_argument('--batch_size', type=int, default=1, help='training batch si
 parser.add_argument('--size', type=int, default=256, help='training dataset size')
 parser.add_argument('--clip', type=float, default=0.5, help='gradient clipping margin')
 parser.add_argument('--save_model', type=str, default="./save_models/train_model", help='save_model')
-parser.add_argument('--predict_data_path', type=str, default="./test_predict_data", help='predict_data_path')
-parser.add_argument('--dataset', type=list, default=["DAVIS", "DAVSOD", "UVSD"], help='dataset')
+parser.add_argument('--predict_data_path', type=str, default="./data/test_predict_data", help='predict_data_path')
+parser.add_argument('--dataset', type=list, default=["DAVIS_20", "DAVSOD_Difficult_15", "DAVSOD_Easy_25", "DAVSOD_Normal_15", "DAVSOD_Validation_Set_21", "UVSD_9"], help='dataset')
 parser.add_argument('--log_dir', type=str, default="./Log_file", help="log_dir file")
 
 args = parser.parse_args()
@@ -34,8 +34,8 @@ else:
 Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=False)
 Decoder_Model = Video_Decoder_Model()
 
-Encoder_path = args.save_model + "/encoder_model_15.pth"
-Decoder_path = args.save_model + "/decoder_model_15.pth"
+Encoder_path = args.save_model + "/best_encoder_model.pth"
+Decoder_path = args.save_model + "/best_decoder_model.pth"
 if os.path.exists(Encoder_path):
     print('Loading state dict from: {}'.format(Encoder_path))
     Encoder_Model.load_state_dict(torch.load(Encoder_path, map_location=torch.device(device)))
@@ -68,7 +68,7 @@ def predict(dataloader, encoder_model, decoder_model, dataset):
             else:
                 image = Variable(image, requires_grad=False)
 
-            block = encoder_model(images)
+            block = encoder_model(image)
 
             images.append(image)
             paths.append(path)

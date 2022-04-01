@@ -1,4 +1,0 @@
-[2022-03-27 03:47:32 PM-pre_train.py-INFO:#Train# 03/27 15:47, Epoch: [1/20], Done: 0.03%, Step: [1/3393], Loss: 12.2624]
-[2022-03-27 03:50:21 PM-pre_train.py-INFO:#Train# 03/27 15:50, Epoch: [1/20], Done: 0.06%, Step: [2/3393], Loss: 11.3182]
-[2022-03-27 03:53:10 PM-pre_train.py-INFO:#Train# 03/27 15:53, Epoch: [1/20], Done: 0.09%, Step: [3/3393], Loss: 11.5501]
-[2022-03-28 05:06:47 PM-pre_train.py-INFO:#Train# 03/28 17:06, Epoch: [1/20], Done: 0.29%, Step: [10/3393], Loss: 11.4043]

@@ -16,7 +16,7 @@ import time
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--epoch', type=int, default=20, help='epoch number')
+parser.add_argument('--epoch', type=int, default=60, help='epoch number')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
 parser.add_argument('--batch_size', type=int, default=1, help='training batch size')
 parser.add_argument('--size', type=int, default=256, help='training dataset size')
@@ -25,8 +25,8 @@ parser.add_argument('--decay_rate', type=float, default=0.9, help='decay rate of
 parser.add_argument('--decay_epoch', type=int, default=15, help='every n epochs decay learning rate')
 parser.add_argument('--save_model', type=str, default="./save_models/train_model", help='save_Encoder_model_path')
 parser.add_argument('--load_train_model', type=bool, default=False, help='load_model')
-parser.add_argument('--load_pre_train_model', type=bool, default=False, help='load_model')
-parser.add_argument('--dataset', type=list, default=["DAVIS", "DAVSOD", "UVSD"], help='dataset')
+parser.add_argument('--load_pre_train_model', type=bool, default=True, help='load_model')
+parser.add_argument('--dataset', type=list, default=["DAVIS_30", "DAVSOD_111", "UVSD_9"], help='dataset')
 parser.add_argument('--log_dir', type=str, default="./Log_file", help="log_dir file")
 
 args = parser.parse_args()
@@ -40,7 +40,7 @@ if torch.cuda.is_available():
 else:
     device = 'cpu'
 
-Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=12, pretrained=True)
+Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=True)
 Decoder_Model = Video_Decoder_Model()
 
 # 加载预训练模型
@@ -80,6 +80,7 @@ optimizer_Decoder = optim.Adam(Decoder_Model.parameters(), lr=args.lr)
 
 # val
 def val(dataloader, val_encoder, val_decoder):
+    global mae, E_measure, S_measure
     val_encoder.eval()
     val_decoder.eval()
 
@@ -100,36 +101,35 @@ def val(dataloader, val_encoder, val_decoder):
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
-            block = val_encoder(images)
+            block = val_encoder(image)
             images.append(image)
             gts.append(gt)
             blocks.append(block)
 
         # 解码
         out4, out3, out2, ou1, out0 = val_decoder(blocks)
-        out_time = time.time()
 
         # Loss 计算
         predicts = out0
 
         for predict, gt in (zip(predicts, gts)):
             mae = Eval_mae(predict, gt)
-            MAES += mae
+            MAES += mae.data
 
             prec, recall = Eval_F_measure(predict, gt)
-            avg_p += prec
-            avg_r += recall
+            avg_p += prec.data
+            avg_r += recall.data
 
             E_measure = Eval_E_measure(predict, gt)
-            E_measures += E_measure
+            E_measures += E_measure.data
             S_measure = Eval_S_measure(predict, gt)
-            S_measures += S_measure
+            S_measures += S_measure.data
 
-            if img_num % 10 == 0:
-                print('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
-                      format((img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
-                logging.info('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
-                             format((img_num / total_num) * 100, img_num, total_num, mae, E_measure, S_measure))
+        if img_num % 200 == 0:
+            print('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
+                  format((img_num / total_num) * 100, img_num, total_num, MAES / img_num, E_measures / img_num, S_measures / img_num))
+            logging.info('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
+                         format((img_num / total_num) * 100, img_num, total_num, MAES / img_num, E_measures / img_num, S_measures / img_num))
 
     avg_mae = MAES / img_num
 
@@ -188,7 +188,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
-            block = encoder_model(images)
+            block = encoder_model(image)
 
             images.append(image)
             gts.append(gt)
@@ -201,7 +201,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
         loss = []
         frame1_loss, frame2_loss, frame3_loss, frame4_loss = multi_bce_loss_fusion(out4, out3, out2, out1, out0, gts)
         loss = [frame1_loss, frame2_loss, frame3_loss, frame4_loss]
-        losses = losses + (frame1_loss + frame2_loss + frame3_loss + frame4_loss) / len(loss)
+        losses = losses + (frame1_loss.data + frame2_loss.data + frame3_loss.data + frame4_loss.data) / len(loss)
 
         # 反向传播
         torch.autograd.backward(loss)
@@ -228,8 +228,8 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
 
         if best_val_loss < val_loss:  # big is best
             best_val_loss = val_loss
-            torch.save(encoder_model.state_dict(), args.save_model + '/best_encoder_model' + '_%d' % Epoch + '.pth')
-            torch.save(decoder_model.state_dict(), args.save_model + '/best_decoder_model' + '_%d' % Epoch + '.pth')
+            torch.save(encoder_model.state_dict(), args.save_model + '/best_encoder_model.pth')
+            torch.save(decoder_model.state_dict(), args.save_model + '/best_decoder_model.pth')
             print('this is best_model_Epoch: {}'.format(Epoch))
             logging.info('this is best_model_Epoch: {}'.format(Epoch))
 
@@ -239,13 +239,13 @@ if __name__ == '__main__':
     # 数据加载
     # train data load
     train_transforms = get_train_transforms(input_size=(args.size, args.size))
-    train_dataset = VideoDataset(root_dir="./data/train_data", training_set_list=args.dataset, training=True,
+    train_dataset = VideoDataset(root_dir="./data/Video_train_data", training_set_list=args.dataset, training=True,
                                  transforms=train_transforms)
     train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=True, drop_last=True)
 
     # val data load
     val_transforms = get_transforms(input_size=(args.size, args.size))
-    val_dataset = VideoDataset(root_dir="./data/val_data", training_set_list=["DAVSOD"], training=True,
+    val_dataset = VideoDataset(root_dir="./data/Video_val_data", training_set_list=["Val_data"], training=True,
                                transforms=val_transforms)
     val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 

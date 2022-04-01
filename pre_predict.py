@@ -16,8 +16,8 @@ parser.add_argument('--batch_size', type=int, default=1, help='training batch si
 parser.add_argument('--size', type=int, default=256, help='training dataset size')
 parser.add_argument('--clip', type=float, default=0.5, help='gradient clipping margin')
 parser.add_argument('--save_model', type=str, default="./save_models/pretrain_model", help='save_model')
-parser.add_argument('--predict_data_path', type=str, default="./predict_data", help='predict_data_path')
-parser.add_argument('--dataset', type=list, default=["DAVIS"], help='dataset')
+parser.add_argument('--predict_data_path', type=str, default="./data/test_predict_data", help='predict_data_path')
+parser.add_argument('--dataset', type=list, default=["Test"], help='dataset')
 parser.add_argument('--log_dir', type=str, default="./Log_file", help="log_dir file")
 
 args = parser.parse_args()
@@ -30,7 +30,7 @@ if torch.cuda.is_available():
 else:
     device = 'cpu'
 
-Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=12, pretrained=False)
+Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=False)
 Decoder_Model = Video_Decoder_Model()
 
 Encoder_path = args.save_model + "/best_pre_encoder_model.pth"
@@ -57,7 +57,7 @@ def predict(dataloader, encoder_model, decoder_model, dataset):
 
     for i, packs in enumerate(dataloader):
         i = i + 1
-        images, paths, gts = [], [], []
+        images, paths, gts, blocks = [], [], [], []
         in_time = time.time()
         for pack in packs:
             image, gt, path = pack["image"], pack["gt"], pack["path"][0]
@@ -67,13 +67,15 @@ def predict(dataloader, encoder_model, decoder_model, dataset):
             else:
                 image = Variable(image, requires_grad=False)
 
+            block = encoder_model(image)
+
+            blocks.append(block)
             images.append(image)
             paths.append(path)
             gts.append(gt)
 
         # 编码 解码
-        block = encoder_model(images)
-        out4, out3, out2, out1, out0 = decoder_model(block)
+        out4, out3, out2, out1, out0 = decoder_model(blocks)
 
         # 显示内容
         out_time = time.time()
