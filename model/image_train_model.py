@@ -6,9 +6,9 @@ from .ConvGRU import ConvGRUCell
 from .resnet_dilation import resnet34
 
 
-class Video_Encoder_Model(nn.Module):
+class Image_Encoder_Model(nn.Module):
     def __init__(self, output_stride, input_channels=3, pretrained=True):
-        super(Video_Encoder_Model, self).__init__()
+        super(Image_Encoder_Model, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=64, kernel_size=(3, 3), padding=1,
                                stride=(1, 1), bias=False)
@@ -91,9 +91,9 @@ class Video_Encoder_Model(nn.Module):
         return [block1, block2, block3, block4, block5]
 
 
-class Video_Decoder_Model(nn.Module):
+class Image_Decoder_Model(nn.Module):
     def __init__(self):
-        super(Video_Decoder_Model, self).__init__()
+        super(Image_Decoder_Model, self).__init__()
 
         # --------------------第五解码阶段--------------------
         self.decoder5_1 = Video_Decoder_Part(512, 512)

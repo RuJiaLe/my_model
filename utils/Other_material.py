@@ -1,12 +1,10 @@
-import torch
-import torch.nn.functional as F
-from torch.autograd import Variable
 import numpy as np
-from math import exp
 import os
 from PIL import Image
-import sys
-import logging
+import torch
+from torch.autograd import Variable
+from math import exp
+import torch.nn.functional as F
 
 
 # ******************************学习率衰减******************************
@@ -16,6 +14,31 @@ def adjust_lr(optimizer, epoch, decay_rate=0.9, decay_epoch=30):
 
     for param_group in optimizer.param_groups:
         param_group['lr'] *= decay
+
+
+# ******************************图片保存******************************
+def Save_result(img, frame_image_path, save_path):
+    path_split = frame_image_path.split("/")[3:]
+
+    image_save_path = os.path.join(save_path, path_split[0], path_split[1], "predicts")
+
+    if not os.path.exists(image_save_path):
+        os.makedirs(image_save_path)
+
+    image_save_path = image_save_path + '/' + path_split[3][:-4] + '.png'
+
+    img = img[0, :, :, :]
+    img = img.detach().cpu().numpy().squeeze()
+
+    img = (img - img.min()) / (img.max() - img.min() + 1e-20)
+    img = img * 255.0
+    img = img.astype(np.uint8)
+
+    img[img >= 128] = 255
+    img[img < 128] = 0
+
+    img = Image.fromarray(img)
+    img.save(image_save_path)
 
 
 # ******************************Loss******************************
@@ -106,31 +129,7 @@ class SSIM(torch.nn.Module):
         return _ssim(img1, img2, window, self.window_size, channel, self.size_average)
 
 
-# ******************************图片保存******************************
-def Save_result(img, frame_image_path, save_path):
-    path_split = frame_image_path.split("/")[3:]
-
-    image_save_path = os.path.join(save_path, path_split[0], path_split[1], "predicts")
-
-    if not os.path.exists(image_save_path):
-        os.makedirs(image_save_path)
-
-    image_save_path = image_save_path + '/' + path_split[3][:-4] + '.png'
-
-    img = img[0, :, :, :]
-    img = img.detach().cpu().numpy().squeeze()
-    img = (img - img.min()) / (img.max() - img.min() + 1e-8)
-    img = img * 255.0
-    img = img.astype(np.uint8)
-
-    img[img >= 128] = 255
-    img[img < 128] = 0
-
-    img = Image.fromarray(img)
-    img.save(image_save_path)
-
-
-# ******************************Evaluation material******************************
+# ******************************Eval******************************
 # RP
 def _eval_pr(y_pred, y, num):
     if torch.cuda.is_available():

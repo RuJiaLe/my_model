@@ -58,7 +58,7 @@ import argparse
 from dataset.dataload import VideoDataset
 from dataset.transforms import get_train_transforms, get_transforms
 from torch.utils.data import DataLoader
-from model.train_model import Video_Encoder_Model, Video_Decoder_Model
+from model.video_train_model import Video_Encoder_Model, Video_Decoder_Model
 import torch.optim as optim
 from utils import adjust_lr, Eval_mae, Eval_F_measure, Eval_E_measure, Eval_S_measure
 from datetime import datetime
@@ -75,7 +75,7 @@ parser.add_argument('--size', type=int, default=256, help='training dataset size
 parser.add_argument('--clip', type=float, default=0.5, help='gradient clipping margin')
 parser.add_argument('--decay_rate', type=float, default=0.9, help='decay rate of learning rate')
 parser.add_argument('--decay_epoch', type=int, default=15, help='every n epochs decay learning rate')
-parser.add_argument('--save_model', type=str, default="./save_models/train_model", help='save_Encoder_model_path')
+parser.add_argument('--save_model', type=str, default="./save_models/video_train_model", help='save_Encoder_model_path')
 parser.add_argument('--load_train_model', type=bool, default=False, help='load_model')
 parser.add_argument('--load_pre_train_model', type=bool, default=False, help='load_model')
 parser.add_argument('--dataset', type=list, default=["DAVIS_30", "DAVSOD_111", "UVSD_9"], help='dataset')

@@ -1,5 +1,5 @@
 import torch
-from model.pre_train_model import Video_Encoder_Model, Video_Decoder_Model
+from model.image_train_model import Video_Encoder_Model, Video_Decoder_Model
 import time
 
 Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=True)

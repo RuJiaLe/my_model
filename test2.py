@@ -1,6 +1,6 @@
 import torch
 from model.Resnet import resnet50, resnet18
-from model.train_model import Video_Encoder_Model
+from model.video_train_model import Video_Encoder_Model
 from model.utils import block_aspp_moudle
 import torch.nn as nn
 import torch.nn.functional as F

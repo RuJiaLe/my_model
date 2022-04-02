@@ -1,28 +1,11 @@
-import os
 import torch
-from torch.autograd import Variable
-import argparse
-from dataset.dataload import EvalDataset
-from dataset.transforms import get_Eval_transforms
-from torch.utils.data import DataLoader
-from utils import Eval_mae, Eval_F_measure, Eval_E_measure, Eval_S_measure
-import logging
 import time
-
-parser = argparse.ArgumentParser()
-
-parser.add_argument('--batch_size', type=int, default=1, help='training batch size')
-parser.add_argument('--size', type=int, default=256, help='training dataset size')
-parser.add_argument('--clip', type=float, default=0.5, help='gradient clipping margin')
-parser.add_argument('--predict_data_path', type=str, default="./test_predict_data", help='predict_data_path')
-parser.add_argument('--datasets', type=list, default=["DAVIS"], help='datasets')
-parser.add_argument('--log_dir', type=str, default="./Log_file", help="log_dir file")
-
-args = parser.parse_args()
-
-logging.basicConfig(filename=args.log_dir + '/val_log_34th.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]', level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
+from torch.autograd import Variable
+from utils.Other_material import Eval_mae, Eval_F_measure, Eval_E_measure, Eval_S_measure
+import logging
 
 
+# Eval
 def Eval(dataset, dataloader):
     total_num = len(dataloader) * 4
     MAES, E_measures, S_measures = 0.0, 0.0, 0.0
@@ -40,22 +23,20 @@ def Eval(dataset, dataloader):
                 predict, gt = Variable(predict, requires_grad=False), Variable(gt, requires_grad=False)
 
             mae = Eval_mae(predict, gt)
-            MAES += mae
+            MAES += mae.data
 
             prec, recall = Eval_F_measure(predict, gt)
-            avg_p += prec
-            avg_r += recall
+            avg_p += prec.data
+            avg_r += recall.data
 
             E_measure = Eval_E_measure(predict, gt)
-            E_measures += E_measure
+            E_measures += E_measure.data
             S_measure = Eval_S_measure(predict, gt)
-            S_measures += S_measure
+            S_measures += S_measure.data
 
-        if img_num % 200 == 0:
+        if img_num % 1 == 0:
             print('dataset: {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
                   format(dataset, (img_num / total_num) * 100, img_num, total_num, MAES / img_num, E_measures / img_num, S_measures / img_num))
-            logging.info('dataset: {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
-                         format(dataset, (img_num / total_num) * 100, img_num, total_num, MAES / img_num, E_measures / img_num, S_measures / img_num))
 
     avg_mae = MAES / img_num
 
@@ -81,12 +62,8 @@ def Eval(dataset, dataloader):
     logging.info('{}'.format('*' * 100))
 
 
-if __name__ == '__main__':
-    for data in args.datasets:
-        # 数据加载
-        transforms = get_Eval_transforms(input_size=(args.size, args.size))
-        Eval_dataset = EvalDataset(root_dir=args.predict_data_path, training_set_list=[data], training=False,
-                                   transforms=transforms)
-        Eval_dataloader = DataLoader(dataset=Eval_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
+def start_Eval(data, Eval_dataloader, log_dir):
+    logging.basicConfig(filename=log_dir + '/val_log.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]',
+                        level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
 
-        Eval(data, Eval_dataloader)
+    Eval(data, Eval_dataloader)
