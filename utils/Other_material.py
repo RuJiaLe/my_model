@@ -7,6 +7,14 @@ from math import exp
 import torch.nn.functional as F
 
 
+# ******************************计算模型参数******************************
+def count_param(model):
+    param_count = 0
+    for param in model.parameters():
+        param_count += param.view(-1).size()[0]
+    return param_count
+
+
 # ******************************学习率衰减******************************
 def adjust_lr(optimizer, epoch, decay_rate=0.9, decay_epoch=30):
     decay = decay_rate ** (epoch // decay_epoch)

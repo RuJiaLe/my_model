@@ -120,10 +120,10 @@ def predict():
                                    transforms=predict_transforms)
     predict_dataloader = DataLoader(dataset=predict_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
+    print(f'load predict data done, total train number is {len(predict_dataloader) * 4}')
+
     start_predict(predict_dataloader, video_encoder_model, video_decoder_model, args.video_encoder_model, args.video_decoder_model,
                   args.predict_dataset, args.predict_data_path, args.log_dir)
-
-    print(f'load predict data done, total train number is {len(predict_dataloader) * 4}')
 
     print('-------------Congratulations! video predict Done!!!-------------')
 
@@ -136,6 +136,8 @@ def Evaluation():
     Eval_dataset = EvalDataset(root_dir=args.predict_data_path, training_set_list=[args.predict_dataset], training=False,
                                transforms=Eval_transforms)
     Eval_dataloader = DataLoader(dataset=Eval_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
+
+    print(f'load evaluation data done, total train number is {len(Eval_dataloader) * 4}')
 
     start_Eval(args.predict_dataset, Eval_dataloader, args.log_dir)
 

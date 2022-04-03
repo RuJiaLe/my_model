@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 from .utils import Video_Decoder_Part
-from .utils import CR2, CS, block_aspp_moudle, CS_attention_module, Res_Block
+from .utils import CR2, CS, block_aspp_moudle
 from .ConvGRU import ConvGRUCell
-from .resnet_dilation import resnet34
+from .resnet_dilation import resnet50
+from .triplet_attention import TripletAttention
 
 
 class Video_Encoder_Model(nn.Module):
@@ -16,21 +17,23 @@ class Video_Encoder_Model(nn.Module):
         self.relu1 = nn.ReLU(inplace=True)
         self.max_pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.resnet = resnet34(pretrained=pretrained)
+        self.resnet = resnet50(pretrained=pretrained)
 
-        self.layer5 = Res_Block(512, 512)
+        self.block1_attention = TripletAttention()
+        self.block2_attention = TripletAttention()
+        self.block3_attention = TripletAttention()
+        self.block4_attention = TripletAttention()
 
-        self.block1_aspp = block_aspp_moudle(in_dim=64, out_dim=64, output_stride=output_stride)
-        self.block2_aspp = block_aspp_moudle(in_dim=128, out_dim=128, output_stride=output_stride)
-        self.block3_aspp = block_aspp_moudle(in_dim=256, out_dim=256, output_stride=output_stride)
+        self.block1_aspp = block_aspp_moudle(in_dim=256, out_dim=256, output_stride=output_stride)
+        self.block2_aspp = block_aspp_moudle(in_dim=512, out_dim=512, output_stride=output_stride)
+        # self.block3_aspp = block_aspp_moudle(in_dim=1024, out_dim=1024, output_stride=output_stride)
         # self.block4_aspp = block_aspp_moudle(in_dim=512, out_dim=512, output_stride=output_stride)
         # self.block5_aspp = block_aspp_moudle(in_dim=512, out_dim=512, output_stride=output_stride)
 
-        self.CS_attention_module_1 = CS_attention_module(in_channels=64)
-        self.CS_attention_module_2 = CS_attention_module(in_channels=128)
-        self.CS_attention_module_3 = CS_attention_module(in_channels=256)
-        self.CS_attention_module_4 = CS_attention_module(in_channels=512)
-        self.CS_attention_module_5 = CS_attention_module(in_channels=512)
+        self.attention_module_1 = TripletAttention()
+        self.attention_module_2 = TripletAttention()
+        self.attention_module_3 = TripletAttention()
+        self.attention_module_4 = TripletAttention()
 
         if pretrained:
             for key in self.state_dict():
@@ -58,22 +61,27 @@ class Video_Encoder_Model(nn.Module):
         block0 = self.relu1(block0)
         block0 = self.max_pool1(block0)  # (1, 64, 128, 128)
 
-        block1 = self.resnet.layer1(block0)  # (1, 64, 128, 128)
-        block2 = self.resnet.layer2(block1)  # (1, 128, 64, 64)
-        block3 = self.resnet.layer3(block2)  # (1, 256, 32, 32)
-        block4 = self.resnet.layer4(block3)  # (1, 512, 16, 16)
-        block5 = self.layer5(block4)  # (1, 512, 8, 8)
+        block1_attention = self.block1_attention(block0)
+        block1 = self.resnet.layer1(block1_attention)  # (1, 256, 64, 64)
+
+        block2_attention = self.block2_attention(block1)
+        block2 = self.resnet.layer2(block2_attention)  # (1, 512, 32, 32)
+
+        block3_attention = self.block3_attention(block2)
+        block3 = self.resnet.layer3(block3_attention)  # (1, 1024, 16, 16)
+
+        block4_attention = self.block4_attention(block3)
+        block4 = self.resnet.layer4(block4_attention)  # (1, 1024, 8, 8)
 
         # print(f'block0: {block0.size()}')
         # print(f'block1: {block1.size()}')
         # print(f'block2: {block2.size()}')
         # print(f'block3: {block3.size()}')
         # print(f'block4: {block4.size()}')
-        # print(f'block5: {block5.size()}')
 
         block1 = self.block1_aspp(block1)
         block2 = self.block2_aspp(block2)
-        block3 = self.block3_aspp(block3)
+        # block3 = self.block3_aspp(block3)
         # block4 = self.block4_aspp(block4)
         # block5 = self.block5_aspp(block5)
 
@@ -82,13 +90,13 @@ class Video_Encoder_Model(nn.Module):
         # print(f'block3_result: {block3_result.size()}')
         # print(f'block4_result: {block4_result.size()}')
 
-        block1 = self.CS_attention_module_1(block1)  # (1, 64, 128, 128)
-        block2 = self.CS_attention_module_2(block2)  # (1, 128, 64, 64)
-        block3 = self.CS_attention_module_3(block3)  # (1, 256, 32, 32)
-        block4 = self.CS_attention_module_4(block4)  # (1, 512, 16, 16)
-        block5 = self.CS_attention_module_5(block5)  # (1, 512, 8, 8)
+        block1 = self.attention_module_1(block1)  # (1, 64, 128, 128)
+        block2 = self.attention_module_2(block2)  # (1, 128, 64, 64)
+        block3 = self.attention_module_3(block3)  # (1, 256, 32, 32)
+        block4 = self.attention_module_4(block4)  # (1, 512, 16, 16)
+        # block5 = self.CS_attention_module_5(block5)  # (1, 512, 8, 8)
 
-        return [block1, block2, block3, block4, block5]
+        return [block1, block2, block3, block4]
 
 
 class Video_Decoder_Model(nn.Module):

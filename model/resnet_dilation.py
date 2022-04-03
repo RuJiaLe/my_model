@@ -109,7 +109,7 @@ class ResNet(nn.Module):
             stride = [1, 2, 1, 1]
             dilation = [1, 1, 2, 2]
         elif output_stride == 16:
-            stride = [1, 2, 2, 2]
+            stride = [2, 2, 2, 2]
             dilation = [2, 4, 8, 16]
 
         self.inplanes = 64

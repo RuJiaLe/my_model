@@ -3,6 +3,7 @@ import os
 import random
 from PIL import Image
 import numpy as np
+import PIL.ImageOps
 
 
 class VideoDataset(Dataset):
@@ -61,6 +62,9 @@ class VideoDataset(Dataset):
         image = Image.open(image_path).convert("RGB")
         gt_path = frame_info["gt_path"]
         gt = Image.open(gt_path).convert("L")
+
+        gt = PIL.ImageOps.invert(gt)
+
         sample = {"image": image, "gt": gt, "path": image_path}
 
         return sample
@@ -69,6 +73,9 @@ class VideoDataset(Dataset):
         frame = self.frames[idx]
 
         frame_output = []
+
+        if self.training and random.randint(0, 1):
+            frame = frame[::-1]
 
         for i in range(len(frame)):
             item = self.get_frame(frame[i])
@@ -112,21 +119,83 @@ class ImageDataset(Dataset):
     def get_clips(self, image_info):
         clips = []
 
-        for i in range(int(len(image_info) / self.clip)):
-            clips.append(image_info[self.clip * i: self.clip * (i + 1)])
-
-        finish = self.clip * (int(len(image_info) / self.clip))
-
-        if finish < len(image_info):
-            clips.append(image_info[len(image_info) - self.clip: len(image_info)])
+        for i in range(int(len(image_info))):
+            clips.append([image_info[i], image_info[i], image_info[i], image_info[i]])
 
         return clips
+
+    def motion_simulate(self, image_output):  # [{}, {}, {}, {}]
+        output = []
+
+        flag = random.randint(-1, 1)
+        if flag == -1:
+            # 向左平移
+            if random.randint(0, 1):
+                for i in range(len(image_output)):
+                    img, gt = image_output[i]['image'], image_output[i]['gt']
+
+                    img = img.transform(img.size, Image.AFFINE, (1, 0, i * 10, 0, 1, 0))
+                    gt = gt.transform(gt.size, Image.AFFINE, (1, 0, i * 10, 0, 1, 0))
+
+                    image_output[i]['image'], image_output[i]['gt'] = img, gt
+            # 向右平移
+            else:
+                for i in range(len(image_output)):
+                    img, gt = image_output[i]['image'], image_output[i]['gt']
+
+                    img = img.transform(img.size, Image.AFFINE, (1, 0, -i * 10, 0, 1, 0))
+                    gt = gt.transform(gt.size, Image.AFFINE, (1, 0, -i * 10, 0, 1, 0))
+
+                    image_output[i]['image'], image_output[i]['gt'] = img, gt
+
+        elif flag == 0:
+            # 向上平移
+            if random.randint(0, 1):
+                for i in range(len(image_output)):
+                    img, gt = image_output[i]['image'], image_output[i]['gt']
+
+                    img = img.transform(img.size, Image.AFFINE, (1, 0, 0, 0, 1, i * 10))
+                    gt = gt.transform(gt.size, Image.AFFINE, (1, 0, 0, 0, 1, i * 10))
+
+                    image_output[i]['image'], image_output[i]['gt'] = img, gt
+            # 向下平移
+            else:
+                for i in range(len(image_output)):
+                    img, gt = image_output[i]['image'], image_output[i]['gt']
+
+                    img = img.transform(img.size, Image.AFFINE, (1, 0, 0, 0, 1, -i * 10))
+                    gt = gt.transform(gt.size, Image.AFFINE, (1, 0, 0, 0, 1, -i * 10))
+
+                    image_output[i]['image'], image_output[i]['gt'] = img, gt
+        else:
+            # 逆时针旋转
+            if random.randint(0, 1):
+                for i in range(len(image_output)):
+                    img, gt = image_output[i]['image'], image_output[i]['gt']
+
+                    img = img.rotate(i * 5, Image.BILINEAR)
+                    gt = gt.rotate(i * 5, Image.BILINEAR)
+
+                    image_output[i]['image'], image_output[i]['gt'] = img, gt
+            # 顺时针旋转
+            else:
+                for i in range(len(image_output)):
+                    img, gt = image_output[i]['image'], image_output[i]['gt']
+
+                    img = img.rotate(-i * 5, Image.BILINEAR)
+                    gt = gt.rotate(-i * 5, Image.BILINEAR)
+
+                    image_output[i]['image'], image_output[i]['gt'] = img, gt
+
+        return image_output
 
     def get_image(self, image_info):
         image_path = image_info["image_path"]
         image = Image.open(image_path).convert("RGB")
         gt_path = image_info["gt_path"]
         gt = Image.open(gt_path).convert("L")
+
+        gt = PIL.ImageOps.invert(gt)
 
         sample = {"image": image, "gt": gt, "path": image_path}
 
@@ -140,6 +209,12 @@ class ImageDataset(Dataset):
         for i in range(len(images)):
             item = self.get_image(images[i])
             image_output.append(item)
+
+        # 变换
+        image_output = self.motion_simulate(image_output)
+
+        if random.randint(0, 1):
+            image_output = image_output[::-1]
 
         frame_output = self.transforms(image_output)
 

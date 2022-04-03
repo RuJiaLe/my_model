@@ -1,25 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="2022/4/1 16:07">
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/Evaluation_material.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/Other_material.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/Predict_material.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/utils/__init__.py" afterDir="false" />
+    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="2022/4/2 12:02">
+      <change afterPath="$PROJECT_DIR$/MODELS/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Loss.py" beforeDir="false" afterPath="$PROJECT_DIR$/Loss.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/evaluation.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/model/pre_train_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/image_train_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model/train_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/video_train_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pre_predict.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pre_train.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/Train_material.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/predict.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/speed.py" beforeDir="false" afterPath="$PROJECT_DIR$/speed.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dataset/dataload.py" beforeDir="false" afterPath="$PROJECT_DIR$/dataset/dataload.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/resnet_dilation.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/resnet_dilation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model/video_train_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/model/video_train_model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.py" beforeDir="false" afterPath="$PROJECT_DIR$/test.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test2.py" beforeDir="false" afterPath="$PROJECT_DIR$/test2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/Other_material.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/Other_material.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,10 +34,10 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../DCFNet" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../triplet-attention-master" />
     <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
-  <component name="RunManager" selected="Python.main">
+  <component name="RunManager" selected="Python.test2">
     <configuration name="evaluation" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="my_model" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -81,27 +72,6 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="pre_predict" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="my_model" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/pre_predict.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -152,13 +122,34 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="test2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="my_model" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/test2.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test2" />
+        <item itemvalue="Python.test" />
         <item itemvalue="Python.main" />
         <item itemvalue="Python.evaluation" />
         <item itemvalue="Python.predict" />
-        <item itemvalue="Python.pre_predict" />
-        <item itemvalue="Python.test" />
       </list>
     </recent_temporary>
   </component>
@@ -339,7 +330,14 @@
       <option name="project" value="LOCAL" />
       <updated>1648800450910</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="2022/4/2 12:02">
+      <created>1648872132615</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1648872132615</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -376,6 +374,7 @@
     <MESSAGE value="2022/3/29 9:53" />
     <MESSAGE value="2022/3/30 16:47" />
     <MESSAGE value="2022/4/1 16:07" />
-    <option name="LAST_COMMIT_MESSAGE" value="2022/4/1 16:07" />
+    <MESSAGE value="2022/4/2 12:02" />
+    <option name="LAST_COMMIT_MESSAGE" value="2022/4/2 12:02" />
   </component>
 </project>
