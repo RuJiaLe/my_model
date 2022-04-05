@@ -1,5 +1,5 @@
 import torch
-from model.image_train_model import Video_Encoder_Model, Video_Decoder_Model
+from model.video_train_model import Video_Encoder_Model, Video_Decoder_Model
 import time
 
 Encoder_Model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=True)
@@ -26,12 +26,11 @@ blocks = []
 for x in x_s:
     block = Encoder_Model(x)
     blocks.append(block)
-out5, out4, out3, out2, out1 = Decoder_Model(blocks)
+out4, out3, out2, out1 = Decoder_Model(blocks)
 
 end_time = time.time()
 
 print(f"time_cost: {(end_time - start_time) / 1.0}")
-print(f'out4[0]: {out5[0].size()}')
 print(f'out3[0]: {out4[0].size()}')
 print(f'out2[0]: {out3[0].size()}')
 print(f'out1[0]: {out2[0].size()}')

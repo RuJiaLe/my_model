@@ -10,21 +10,19 @@ class Res_Block(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(Res_Block, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=(3, 3), padding=8, dilation=(8, 8))
-        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels // 2, kernel_size=(1, 1))
+        self.bn1 = nn.BatchNorm2d(in_channels // 2)
         self.relu1 = nn.ReLU(inplace=True)
 
-        self.conv2 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), padding=4, dilation=(4, 4))
-        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(in_channels=in_channels // 2, out_channels=in_channels // 2, kernel_size=(3, 3), padding=1)
+        self.bn2 = nn.BatchNorm2d(in_channels // 2)
         self.relu2 = nn.ReLU(inplace=True)
 
-        self.conv3 = nn.Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=(3, 3), padding=2, dilation=(2, 2))
+        self.conv3 = nn.Conv2d(in_channels=in_channels // 2, out_channels=out_channels, kernel_size=(1, 1))
         self.bn3 = nn.BatchNorm2d(out_channels)
         self.relu3 = nn.ReLU(inplace=True)
 
         self.conv1x1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, 1))
-
-        self.max_pool = nn.MaxPool2d(kernel_size=2, stride=2)
 
     def forward(self, x):
         out = self.conv1(x)
@@ -42,60 +40,44 @@ class Res_Block(nn.Module):
         out = out + x
         out = self.relu2(out)
 
-        out = self.max_pool(out)
-
         return out
 
 
-# CBR2
-class CR2(nn.Module):
-    def __init__(self, input_channels, out_channels):
-        super(CR2, self).__init__()
-        self.conv = nn.Conv2d(in_channels=input_channels, out_channels=out_channels, kernel_size=(3, 3), stride=(1, 1),
-                              padding=1)
-        self.relu = nn.ReLU(inplace=True)
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.relu(x)
-
-        return x
-
-
-# CBR4
-class CR4(nn.Module):
-    def __init__(self, input_channels, out_channels):
-        super(CR4, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=input_channels, out_channels=input_channels // 2, kernel_size=(3, 3), stride=(1, 1),
-                               padding=1)
-        self.relu1 = nn.ReLU(inplace=True)
-
-        self.conv2 = nn.Conv2d(in_channels=input_channels // 2, out_channels=out_channels, kernel_size=(3, 3), stride=(1, 1),
-                               padding=1)
-        self.relu2 = nn.ReLU(inplace=True)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.relu1(x)
-
-        x = self.conv2(x)
-        x = self.relu2(x)
-
-        return x
-
-
 # CBS
-class CS(nn.Module):
+class CBS(nn.Module):
     def __init__(self, input_channels, out_channels):
-        super(CS, self).__init__()
+        super(CBS, self).__init__()
         self.conv = nn.Conv2d(in_channels=input_channels, out_channels=out_channels, kernel_size=(1, 1))
+        self.bn = nn.BatchNorm2d(out_channels)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         x = self.conv(x)
+        x = self.bn(x)
         x = self.sigmoid(x)
 
         return x
+
+
+# CBR
+class CBR(nn.Module):
+    def __init__(self, input_channels, out_channels):
+        super(CBR, self).__init__()
+        self.conv = nn.Conv2d(in_channels=input_channels, out_channels=out_channels, kernel_size=(1, 1))
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+
+        self.conv1x1 = nn.Conv2d(in_channels=input_channels, out_channels=out_channels, kernel_size=(1, 1))
+
+    def forward(self, x):
+        out = self.conv(x)
+        out = self.bn(out)
+
+        out = out + self.conv1x1(x)
+
+        out = self.relu(out)
+
+        return out
 
 
 # ASPP模块

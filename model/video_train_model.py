@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from .utils import Video_Decoder_Part
-from .utils import CR2, CS, block_aspp_moudle
+from .utils import Res_Block, CBS, block_aspp_moudle, CBR
 from .ConvGRU import ConvGRUCell
 from .resnet_dilation import resnet50
 from .triplet_attention import TripletAttention
@@ -24,8 +24,8 @@ class Video_Encoder_Model(nn.Module):
         self.block3_attention = TripletAttention()
         self.block4_attention = TripletAttention()
 
-        self.block1_aspp = block_aspp_moudle(in_dim=256, out_dim=256, output_stride=output_stride)
-        self.block2_aspp = block_aspp_moudle(in_dim=512, out_dim=512, output_stride=output_stride)
+        # self.block1_aspp = block_aspp_moudle(in_dim=256, out_dim=256, output_stride=output_stride)
+        # self.block2_aspp = block_aspp_moudle(in_dim=512, out_dim=512, output_stride=output_stride)
         # self.block3_aspp = block_aspp_moudle(in_dim=1024, out_dim=1024, output_stride=output_stride)
         # self.block4_aspp = block_aspp_moudle(in_dim=512, out_dim=512, output_stride=output_stride)
         # self.block5_aspp = block_aspp_moudle(in_dim=512, out_dim=512, output_stride=output_stride)
@@ -79,8 +79,8 @@ class Video_Encoder_Model(nn.Module):
         # print(f'block3: {block3.size()}')
         # print(f'block4: {block4.size()}')
 
-        block1 = self.block1_aspp(block1)
-        block2 = self.block2_aspp(block2)
+        # block1 = self.block1_aspp(block1)
+        # block2 = self.block2_aspp(block2)
         # block3 = self.block3_aspp(block3)
         # block4 = self.block4_aspp(block4)
         # block5 = self.block5_aspp(block5)
@@ -90,10 +90,10 @@ class Video_Encoder_Model(nn.Module):
         # print(f'block3_result: {block3_result.size()}')
         # print(f'block4_result: {block4_result.size()}')
 
-        block1 = self.attention_module_1(block1)  # (1, 64, 128, 128)
-        block2 = self.attention_module_2(block2)  # (1, 128, 64, 64)
-        block3 = self.attention_module_3(block3)  # (1, 256, 32, 32)
-        block4 = self.attention_module_4(block4)  # (1, 512, 16, 16)
+        block1 = self.attention_module_1(block1)  # (1, 256, 64, 64)
+        block2 = self.attention_module_2(block2)  # (1, 512, 32, 32)
+        block3 = self.attention_module_3(block3)  # (1, 1024, 16, 16)
+        block4 = self.attention_module_4(block4)  # (1, 2048, 8, 8)
         # block5 = self.CS_attention_module_5(block5)  # (1, 512, 8, 8)
 
         return [block1, block2, block3, block4]
@@ -104,105 +104,122 @@ class Video_Decoder_Model(nn.Module):
         super(Video_Decoder_Model, self).__init__()
 
         # --------------------第五解码阶段--------------------
-        self.decoder5_1 = Video_Decoder_Part(512, 512)
-        self.decoder5_2 = Video_Decoder_Part(512, 512)
-        self.decoder5_3 = Video_Decoder_Part(512, 512)
-        self.decoder5_4 = Video_Decoder_Part(512, 512)
-
-        self.ConvGRU5_1 = ConvGRUCell(512, 512)
-        self.ConvGRU5_2 = ConvGRUCell(512, 512)
-        self.ConvGRU5_3 = ConvGRUCell(512, 512)
-        self.ConvGRU5_4 = ConvGRUCell(512, 512)
+        # self.decoder5_1 = Video_Decoder_Part(512, 512)
+        # self.decoder5_2 = Video_Decoder_Part(512, 512)
+        # self.decoder5_3 = Video_Decoder_Part(512, 512)
+        # self.decoder5_4 = Video_Decoder_Part(512, 512)
+        #
+        # self.ConvGRU5_1 = ConvGRUCell(512, 512)
+        # self.ConvGRU5_2 = ConvGRUCell(512, 512)
+        # self.ConvGRU5_3 = ConvGRUCell(512, 512)
+        # self.ConvGRU5_4 = ConvGRUCell(512, 512)
 
         # --------------------第四解码阶段--------------------
-        self.CR4_1 = CR2(1024, 512)
-        self.CR4_2 = CR2(1024, 512)
-        self.CR4_3 = CR2(1024, 512)
-        self.CR4_4 = CR2(1024, 512)
 
-        self.decoder4_1 = Video_Decoder_Part(512, 256)
-        self.decoder4_2 = Video_Decoder_Part(512, 256)
-        self.decoder4_3 = Video_Decoder_Part(512, 256)
-        self.decoder4_4 = Video_Decoder_Part(512, 256)
+        self.Res_block4_1 = Res_Block(2048 * 4, 2048)
+        self.Res_block4_2 = Res_Block(2048 * 4, 2048)
+        self.Res_block4_3 = Res_Block(2048 * 4, 2048)
+        self.Res_block4_4 = Res_Block(2048 * 4, 2048)
 
-        self.ConvGRU4_1 = ConvGRUCell(256, 256)
-        self.ConvGRU4_2 = ConvGRUCell(256, 256)
-        self.ConvGRU4_3 = ConvGRUCell(256, 256)
-        self.ConvGRU4_4 = ConvGRUCell(256, 256)
+        self.decoder4_1 = Video_Decoder_Part(2048, 1024)
+        self.decoder4_2 = Video_Decoder_Part(2048, 1024)
+        self.decoder4_3 = Video_Decoder_Part(2048, 1024)
+        self.decoder4_4 = Video_Decoder_Part(2048, 1024)
+
+        self.ConvGRU4_1 = ConvGRUCell(1024, 1024)
+        self.ConvGRU4_2 = ConvGRUCell(1024, 1024)
+        self.ConvGRU4_3 = ConvGRUCell(1024, 1024)
+        self.ConvGRU4_4 = ConvGRUCell(1024, 1024)
 
         # --------------------第三解码阶段--------------------
-        self.CR3_1 = CR2(512, 256)
-        self.CR3_2 = CR2(512, 256)
-        self.CR3_3 = CR2(512, 256)
-        self.CR3_4 = CR2(512, 256)
 
-        self.decoder3_1 = Video_Decoder_Part(256, 128)
-        self.decoder3_2 = Video_Decoder_Part(256, 128)
-        self.decoder3_3 = Video_Decoder_Part(256, 128)
-        self.decoder3_4 = Video_Decoder_Part(256, 128)
+        self.CBR3_1 = CBR(2048, 1024)
+        self.CBR3_2 = CBR(2048, 1024)
+        self.CBR3_3 = CBR(2048, 1024)
+        self.CBR3_4 = CBR(2048, 1024)
 
-        self.ConvGRU3_1 = ConvGRUCell(128, 128)
-        self.ConvGRU3_2 = ConvGRUCell(128, 128)
-        self.ConvGRU3_3 = ConvGRUCell(128, 128)
-        self.ConvGRU3_4 = ConvGRUCell(128, 128)
+        self.Res_block3_1 = Res_Block(1024 * 4, 1024)
+        self.Res_block3_2 = Res_Block(1024 * 4, 1024)
+        self.Res_block3_3 = Res_Block(1024 * 4, 1024)
+        self.Res_block3_4 = Res_Block(1024 * 4, 1024)
+
+        self.decoder3_1 = Video_Decoder_Part(1024, 512)
+        self.decoder3_2 = Video_Decoder_Part(1024, 512)
+        self.decoder3_3 = Video_Decoder_Part(1024, 512)
+        self.decoder3_4 = Video_Decoder_Part(1024, 512)
+
+        self.ConvGRU3_1 = ConvGRUCell(512, 512)
+        self.ConvGRU3_2 = ConvGRUCell(512, 512)
+        self.ConvGRU3_3 = ConvGRUCell(512, 512)
+        self.ConvGRU3_4 = ConvGRUCell(512, 512)
 
         # --------------------第二解码阶段--------------------
-        self.CR2_1 = CR2(256, 128)
-        self.CR2_2 = CR2(256, 128)
-        self.CR2_3 = CR2(256, 128)
-        self.CR2_4 = CR2(256, 128)
+        self.CBR2_1 = CBR(1024, 512)
+        self.CBR2_2 = CBR(1024, 512)
+        self.CBR2_3 = CBR(1024, 512)
+        self.CBR2_4 = CBR(1024, 512)
 
-        self.decoder2_1 = Video_Decoder_Part(128, 64)
-        self.decoder2_2 = Video_Decoder_Part(128, 64)
-        self.decoder2_3 = Video_Decoder_Part(128, 64)
-        self.decoder2_4 = Video_Decoder_Part(128, 64)
+        self.Res_block2_1 = Res_Block(512 * 4, 512)
+        self.Res_block2_2 = Res_Block(512 * 4, 512)
+        self.Res_block2_3 = Res_Block(512 * 4, 512)
+        self.Res_block2_4 = Res_Block(512 * 4, 512)
 
-        self.ConvGRU2_1 = ConvGRUCell(64, 64, kernel_size=3)
-        self.ConvGRU2_2 = ConvGRUCell(64, 64, kernel_size=3)
-        self.ConvGRU2_3 = ConvGRUCell(64, 64, kernel_size=3)
-        self.ConvGRU2_4 = ConvGRUCell(64, 64, kernel_size=3)
+        self.decoder2_1 = Video_Decoder_Part(512, 256)
+        self.decoder2_2 = Video_Decoder_Part(512, 256)
+        self.decoder2_3 = Video_Decoder_Part(512, 256)
+        self.decoder2_4 = Video_Decoder_Part(512, 256)
+
+        self.ConvGRU2_1 = ConvGRUCell(256, 256, kernel_size=3)
+        self.ConvGRU2_2 = ConvGRUCell(256, 256, kernel_size=3)
+        self.ConvGRU2_3 = ConvGRUCell(256, 256, kernel_size=3)
+        self.ConvGRU2_4 = ConvGRUCell(256, 256, kernel_size=3)
 
         # --------------------第一解码阶段--------------------
-        self.CR1_1 = CR2(128, 64)
-        self.CR1_2 = CR2(128, 64)
-        self.CR1_3 = CR2(128, 64)
-        self.CR1_4 = CR2(128, 64)
+        self.CBR1_1 = CBR(512, 256)
+        self.CBR1_2 = CBR(512, 256)
+        self.CBR1_3 = CBR(512, 256)
+        self.CBR1_4 = CBR(512, 256)
 
-        self.decoder1_1 = Video_Decoder_Part(64, 64)
-        self.decoder1_2 = Video_Decoder_Part(64, 64)
-        self.decoder1_3 = Video_Decoder_Part(64, 64)
-        self.decoder1_4 = Video_Decoder_Part(64, 64)
+        self.Res_block1_1 = Res_Block(256 * 4, 256)
+        self.Res_block1_2 = Res_Block(256 * 4, 256)
+        self.Res_block1_3 = Res_Block(256 * 4, 256)
+        self.Res_block1_4 = Res_Block(256 * 4, 256)
 
-        self.ConvGRU1_1 = ConvGRUCell(64, 64, kernel_size=3)
-        self.ConvGRU1_2 = ConvGRUCell(64, 64, kernel_size=3)
-        self.ConvGRU1_3 = ConvGRUCell(64, 64, kernel_size=3)
-        self.ConvGRU1_4 = ConvGRUCell(64, 64, kernel_size=3)
+        self.decoder1_1 = Video_Decoder_Part(256, 128)
+        self.decoder1_2 = Video_Decoder_Part(256, 128)
+        self.decoder1_3 = Video_Decoder_Part(256, 128)
+        self.decoder1_4 = Video_Decoder_Part(256, 128)
+
+        self.ConvGRU1_1 = ConvGRUCell(128, 128, kernel_size=3)
+        self.ConvGRU1_2 = ConvGRUCell(128, 128, kernel_size=3)
+        self.ConvGRU1_3 = ConvGRUCell(128, 128, kernel_size=3)
+        self.ConvGRU1_4 = ConvGRUCell(128, 128, kernel_size=3)
 
         # --------------------output阶段--------------------
-        self.CS5_1 = CS(512, 1)
-        self.CS5_2 = CS(512, 1)
-        self.CS5_3 = CS(512, 1)
-        self.CS5_4 = CS(512, 1)
+        # self.CS5_1 = CS(512, 1)
+        # self.CS5_2 = CS(512, 1)
+        # self.CS5_3 = CS(512, 1)
+        # self.CS5_4 = CS(512, 1)
 
-        self.CS4_1 = CS(256, 1)
-        self.CS4_2 = CS(256, 1)
-        self.CS4_3 = CS(256, 1)
-        self.CS4_4 = CS(256, 1)
+        self.CBS4_1 = CBS(1024, 1)
+        self.CBS4_2 = CBS(1024, 1)
+        self.CBS4_3 = CBS(1024, 1)
+        self.CBS4_4 = CBS(1024, 1)
 
-        self.CS3_1 = CS(128, 1)
-        self.CS3_2 = CS(128, 1)
-        self.CS3_3 = CS(128, 1)
-        self.CS3_4 = CS(128, 1)
+        self.CBS3_1 = CBS(512, 1)
+        self.CBS3_2 = CBS(512, 1)
+        self.CBS3_3 = CBS(512, 1)
+        self.CBS3_4 = CBS(512, 1)
 
-        self.CS2_1 = CS(64, 1)
-        self.CS2_2 = CS(64, 1)
-        self.CS2_3 = CS(64, 1)
-        self.CS2_4 = CS(64, 1)
+        self.CBS2_1 = CBS(256, 1)
+        self.CBS2_2 = CBS(256, 1)
+        self.CBS2_3 = CBS(256, 1)
+        self.CBS2_4 = CBS(256, 1)
 
-        self.CS1_1 = CS(64, 1)
-        self.CS1_2 = CS(64, 1)
-        self.CS1_3 = CS(64, 1)
-        self.CS1_4 = CS(64, 1)
+        self.CBS1_1 = CBS(128, 1)
+        self.CBS1_2 = CBS(128, 1)
+        self.CBS1_3 = CBS(128, 1)
+        self.CBS1_4 = CBS(128, 1)
 
         # --------------------上采样阶段--------------------
         self.Up_sample_16 = nn.Upsample(scale_factor=16, mode='bilinear')
@@ -216,33 +233,43 @@ class Video_Decoder_Model(nn.Module):
             if isinstance(m[1], nn.BatchNorm2d):
                 m[1].eval()
 
-    def forward(self, block):  # (1, 512, 8, 8)  [block1, block2, block3, block4, block5]
+    def forward(self, block):  # (1, 2048, 8, 8)  [block1, block2, block3, block4]
         # --------------------第五解码阶段--------------------
-        x5_1 = self.decoder5_1(block[0][4])  # (1, 512, 16, 16)
-        x5_2 = self.decoder5_2(block[1][4])
-        x5_3 = self.decoder5_3(block[2][4])
-        x5_4 = self.decoder5_4(block[3][4])
+        # x5_1 = self.decoder5_1(block[0][4])  # (1, 512, 16, 16)
+        # x5_2 = self.decoder5_2(block[1][4])
+        # x5_3 = self.decoder5_3(block[2][4])
+        # x5_4 = self.decoder5_4(block[3][4])
 
         # out4_1 = x4_1
         # out4_2 = x4_2 + (x4_2 - x4_1)
         # out4_3 = x4_3 + (x4_3 - x4_2)
         # out4_4 = x4_4 + (x4_4 - x4_3)
 
-        out5_1 = self.ConvGRU5_1(x5_1, None)  # (1, 512, 16, 16)
-        out5_2 = self.ConvGRU5_2(x5_2 + (x5_2 - x5_1), out5_1)
-        out5_3 = self.ConvGRU5_3(x5_3 + (x5_3 - x5_2), out5_2)
-        out5_4 = self.ConvGRU5_4(x5_4 + (x5_4 - x5_3), out5_3)
+        # out5_1 = self.ConvGRU5_1(x5_1, None)  # (1, 512, 16, 16)
+        # out5_2 = self.ConvGRU5_2(x5_2 + (x5_2 - x5_1), out5_1)
+        # out5_3 = self.ConvGRU5_3(x5_3 + (x5_3 - x5_2), out5_2)
+        # out5_4 = self.ConvGRU5_4(x5_4 + (x5_4 - x5_3), out5_3)
 
         # --------------------第四解码阶段--------------------
-        x4_1 = torch.cat((out5_1, block[0][3]), dim=1)  # (1, 1024, 16, 16)
-        x4_2 = torch.cat((out5_2, block[1][3]), dim=1)
-        x4_3 = torch.cat((out5_3, block[2][3]), dim=1)
-        x4_4 = torch.cat((out5_4, block[3][3]), dim=1)
+        # x4_1 = torch.cat((out5_1, block[0][3]), dim=1)  # (1, 1024, 16, 16)
+        # x4_2 = torch.cat((out5_2, block[1][3]), dim=1)
+        # x4_3 = torch.cat((out5_3, block[2][3]), dim=1)
+        # x4_4 = torch.cat((out5_4, block[3][3]), dim=1)
 
-        x4_1 = self.CR4_1(x4_1)  # (1, 512, 16, 16)
-        x4_2 = self.CR4_2(x4_2)
-        x4_3 = self.CR4_3(x4_3)
-        x4_4 = self.CR4_4(x4_4)
+        # x4_1 = self.CR4_1(x4_1)  # (1, 512, 16, 16)
+        # x4_2 = self.CR4_2(x4_2)
+        # x4_3 = self.CR4_3(x4_3)
+        # x4_4 = self.CR4_4(x4_4)
+
+        x4_1 = torch.cat((block[0][3], block[1][3], block[2][3], block[3][3]), dim=1)
+        x4_2 = torch.cat((block[0][3], block[1][3], block[2][3], block[3][3]), dim=1)
+        x4_3 = torch.cat((block[0][3], block[1][3], block[2][3], block[3][3]), dim=1)
+        x4_4 = torch.cat((block[0][3], block[1][3], block[2][3], block[3][3]), dim=1)
+
+        x4_1 = self.Res_block4_1(x4_1)
+        x4_2 = self.Res_block4_2(x4_2)
+        x4_3 = self.Res_block4_3(x4_3)
+        x4_4 = self.Res_block4_4(x4_4)
 
         x4_1 = self.decoder4_1(x4_1)  # (1, 256, 32, 32)
         x4_2 = self.decoder4_2(x4_2)
@@ -265,10 +292,17 @@ class Video_Decoder_Model(nn.Module):
         x3_3 = torch.cat((out4_3, block[2][2]), dim=1)
         x3_4 = torch.cat((out4_4, block[3][2]), dim=1)
 
-        x3_1 = self.CR3_1(x3_1)  # (1, 256, 32, 32)
-        x3_2 = self.CR3_2(x3_2)
-        x3_3 = self.CR3_3(x3_3)
-        x3_4 = self.CR3_4(x3_4)
+        x3_1 = self.CBR3_1(x3_1)  # (1, 256, 32, 32)
+        x3_2 = self.CBR3_2(x3_2)
+        x3_3 = self.CBR3_3(x3_3)
+        x3_4 = self.CBR3_4(x3_4)
+
+        x3 = torch.cat((x3_1, x3_2, x3_3, x3_4), dim=1)
+
+        x3_1 = self.Res_block3_1(x3)
+        x3_2 = self.Res_block3_2(x3)
+        x3_3 = self.Res_block3_3(x3)
+        x3_4 = self.Res_block3_4(x3)
 
         x3_1 = self.decoder3_1(x3_1)  # (1, 128, 64, 64)
         x3_2 = self.decoder3_2(x3_2)
@@ -286,10 +320,17 @@ class Video_Decoder_Model(nn.Module):
         x2_3 = torch.cat((out3_3, block[2][1]), dim=1)
         x2_4 = torch.cat((out3_4, block[3][1]), dim=1)
 
-        x2_1 = self.CR2_1(x2_1)  # (1, 128, 64, 64)
-        x2_2 = self.CR2_2(x2_2)
-        x2_3 = self.CR2_3(x2_3)
-        x2_4 = self.CR2_4(x2_4)
+        x2_1 = self.CBR2_1(x2_1)  # (1, 128, 64, 64)
+        x2_2 = self.CBR2_2(x2_2)
+        x2_3 = self.CBR2_3(x2_3)
+        x2_4 = self.CBR2_4(x2_4)
+
+        x2 = torch.cat((x2_1, x2_2, x2_3, x2_4), dim=1)
+
+        x2_1 = self.Res_block2_1(x2)
+        x2_2 = self.Res_block2_2(x2)
+        x2_3 = self.Res_block2_3(x2)
+        x2_4 = self.Res_block2_4(x2)
 
         x2_1 = self.decoder2_1(x2_1)  # (1, 64, 128, 128)
         x2_2 = self.decoder2_2(x2_2)
@@ -307,10 +348,17 @@ class Video_Decoder_Model(nn.Module):
         x1_3 = torch.cat((out2_3, block[2][0]), dim=1)
         x1_4 = torch.cat((out2_4, block[3][0]), dim=1)
 
-        x1_1 = self.CR1_1(x1_1)  # (1, 64, 128, 128)
-        x1_2 = self.CR1_2(x1_2)
-        x1_3 = self.CR1_3(x1_3)
-        x1_4 = self.CR1_4(x1_4)
+        x1_1 = self.CBR1_1(x1_1)  # (1, 64, 128, 128)
+        x1_2 = self.CBR1_2(x1_2)
+        x1_3 = self.CBR1_3(x1_3)
+        x1_4 = self.CBR1_4(x1_4)
+
+        x1 = torch.cat((x1_1, x1_2, x1_3, x1_4), dim=1)
+
+        x1_1 = self.Res_block1_1(x1)
+        x1_2 = self.Res_block1_2(x1)
+        x1_3 = self.Res_block1_3(x1)
+        x1_4 = self.Res_block1_4(x1)
 
         x1_1 = self.decoder1_1(x1_1)  # (1, 32, 256, 256)
         x1_2 = self.decoder1_2(x1_2)
@@ -323,33 +371,32 @@ class Video_Decoder_Model(nn.Module):
         out1_4 = self.ConvGRU1_4(x1_4 + (x1_4 - x1_3), out1_3)
 
         # --------------------输出阶段--------------------
-        output5_1 = self.Up_sample_16(self.CS5_1(out5_1))
-        output5_2 = self.Up_sample_16(self.CS5_2(out5_2))
-        output5_3 = self.Up_sample_16(self.CS5_3(out5_3))
-        output5_4 = self.Up_sample_16(self.CS5_4(out5_4))
+        # output5_1 = self.Up_sample_16(self.CS5_1(out5_1))
+        # output5_2 = self.Up_sample_16(self.CS5_2(out5_2))
+        # output5_3 = self.Up_sample_16(self.CS5_3(out5_3))
+        # output5_4 = self.Up_sample_16(self.CS5_4(out5_4))
 
-        output4_1 = self.Up_sample_8(self.CS4_1(out4_1))
-        output4_2 = self.Up_sample_8(self.CS4_2(out4_2))
-        output4_3 = self.Up_sample_8(self.CS4_3(out4_3))
-        output4_4 = self.Up_sample_8(self.CS4_4(out4_4))
+        output4_1 = self.Up_sample_16(self.CBS4_1(out4_1))
+        output4_2 = self.Up_sample_16(self.CBS4_2(out4_2))
+        output4_3 = self.Up_sample_16(self.CBS4_3(out4_3))
+        output4_4 = self.Up_sample_16(self.CBS4_4(out4_4))
 
-        output3_1 = self.Up_sample_4(self.CS3_1(out3_1))
-        output3_2 = self.Up_sample_4(self.CS3_2(out3_2))
-        output3_3 = self.Up_sample_4(self.CS3_3(out3_3))
-        output3_4 = self.Up_sample_4(self.CS3_4(out3_4))
+        output3_1 = self.Up_sample_8(self.CBS3_1(out3_1))
+        output3_2 = self.Up_sample_8(self.CBS3_2(out3_2))
+        output3_3 = self.Up_sample_8(self.CBS3_3(out3_3))
+        output3_4 = self.Up_sample_8(self.CBS3_4(out3_4))
 
-        output2_1 = self.Up_sample_2(self.CS2_1(out2_1))
-        output2_2 = self.Up_sample_2(self.CS2_2(out2_2))
-        output2_3 = self.Up_sample_2(self.CS2_3(out2_3))
-        output2_4 = self.Up_sample_2(self.CS2_4(out2_4))
+        output2_1 = self.Up_sample_4(self.CBS2_1(out2_1))
+        output2_2 = self.Up_sample_4(self.CBS2_2(out2_2))
+        output2_3 = self.Up_sample_4(self.CBS2_3(out2_3))
+        output2_4 = self.Up_sample_4(self.CBS2_4(out2_4))
 
-        output1_1 = self.CS1_1(out1_1)
-        output1_2 = self.CS1_2(out1_2)
-        output1_3 = self.CS1_3(out1_3)
-        output1_4 = self.CS1_4(out1_4)
+        output1_1 = self.Up_sample_2(self.CBS1_1(out1_1))
+        output1_2 = self.Up_sample_2(self.CBS1_2(out1_2))
+        output1_3 = self.Up_sample_2(self.CBS1_3(out1_3))
+        output1_4 = self.Up_sample_2(self.CBS1_4(out1_4))
 
-        return [output5_1, output5_2, output5_3, output5_4], \
-               [output4_1, output4_2, output4_3, output4_4], \
+        return [output4_1, output4_2, output4_3, output4_4], \
                [output3_1, output3_2, output3_3, output3_4], \
                [output2_1, output2_2, output2_3, output2_4], \
                [output1_1, output1_2, output1_3, output1_4]
