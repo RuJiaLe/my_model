@@ -179,13 +179,16 @@ def start_video_train(video_train_dataloader, video_val_dataloader, video_encode
     logging.basicConfig(filename=log_dir + '/video_train_log.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]',
                         level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
     # 预训练模型加载
-    if os.path.exists(encoder_model_path):
-        print('Loading encoder_model from: {}'.format(encoder_model_path))
-        video_encoder_model.load_state_dict(torch.load(encoder_model_path, map_location=torch.device(device)))
+    image_encoder_model_path = "./save_models/image_train_model/best_image_encoder_model.pth"
+    image_decoder_model_path = "./save_models/image_train_model/best_image_decoder_model.pth"
 
-    if os.path.exists(decoder_model_path):
+    if os.path.exists(image_encoder_model_path):
+        print('Loading encoder_model from: {}'.format(image_encoder_model_path))
+        video_encoder_model.load_state_dict(torch.load(image_encoder_model_path, map_location=torch.device(device)))
+
+    if os.path.exists(image_decoder_model_path):
         Decoder_dict = video_decoder_model.state_dict()
-        pre_trained_dict = torch.load(decoder_model_path, map_location=torch.device(device))
+        pre_trained_dict = torch.load(image_decoder_model_path, map_location=torch.device(device))
 
         for k, v in pre_trained_dict.items():
             if k in Decoder_dict:

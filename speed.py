@@ -26,11 +26,12 @@ blocks = []
 for x in x_s:
     block = Encoder_Model(x)
     blocks.append(block)
-out4, out3, out2, out1 = Decoder_Model(blocks)
+out4, out3, out2, out1, out0 = Decoder_Model(blocks)
 
 end_time = time.time()
 
 print(f"time_cost: {(end_time - start_time) / 1.0}")
+
 print(f'out3[0]: {out4[0].size()}')
 print(f'out2[0]: {out3[0].size()}')
 print(f'out1[0]: {out2[0].size()}')
