@@ -122,7 +122,7 @@ print(f'load image train data done, total train number is {len(image_train_datal
 print(f'load image val data done, total train number is {len(image_val_dataloader) * 4}')
 
 if __name__ == '__main__':
-    for i, packs in enumerate(image_train_dataloader):
+    for i, packs in enumerate(image_val_dataloader):
 
         images, gts = [], []
         for pack in packs:

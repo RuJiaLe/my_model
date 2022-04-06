@@ -18,9 +18,10 @@ parser.add_argument('--epoch', type=int, default=60, help='epoch number')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
 parser.add_argument('--batch_size', type=int, default=1, help='training batch size')
 parser.add_argument('--size', type=int, default=256, help='training dataset size')
-parser.add_argument('--decay_rate', type=float, default=0.9, help='decay rate of learning rate')
-parser.add_argument('--decay_epoch', type=int, default=15, help='every n epochs decay learning rate')
+parser.add_argument('--decay_rate', type=float, default=0.5, help='decay rate of learning rate')
+parser.add_argument('--decay_epoch', type=int, default=8, help='every n epochs decay learning rate')
 parser.add_argument('--log_dir', type=str, default="./Log_file", help="log_dir file")
+parser.add_argument('--start_epoch', type=int, default=1, help='start_epoch')
 
 # data_path
 parser.add_argument('--image_train_path', type=str, default="./data/Image_train_data", help='image_train_path')
@@ -43,11 +44,11 @@ parser.add_argument('--predict_dataset', type=str, default="DAVIS_20",
                     help='predict_dataset')
 
 # model_path
-parser.add_argument('--image_encoder_model', type=str, default="./save_models/image_train_model/best_image_encoder_model.pth", help='image_encoder_model')
-parser.add_argument('--image_decoder_model', type=str, default="./save_models/image_train_model/best_image_decoder_model.pth", help='image_decoder_model')
+parser.add_argument('--image_encoder_model', type=str, default="./save_models/image_train_model/best_image_encoder_model.pth.tar", help='image_encoder_model')
+parser.add_argument('--image_decoder_model', type=str, default="./save_models/image_train_model/best_image_decoder_model.pth.tar", help='image_decoder_model')
 
-parser.add_argument('--video_encoder_model', type=str, default="./save_models/video_train_model/best_video_encoder_model.pth", help='video_encoder_model')
-parser.add_argument('--video_decoder_model', type=str, default="./save_models/video_train_model/best_video_decoder_model.pth", help='video_decoder_model')
+parser.add_argument('--video_encoder_model', type=str, default="./save_models/video_train_model/best_video_encoder_model.pth.tar", help='video_encoder_model')
+parser.add_argument('--video_decoder_model', type=str, default="./save_models/video_train_model/best_video_decoder_model.pth.tar", help='video_decoder_model')
 
 args = parser.parse_args()
 
@@ -72,10 +73,10 @@ def image_train():
     image_val_dataloader = DataLoader(dataset=image_val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
     print(f'load image train data done, total train number is {len(image_train_dataloader) * 4}')
-    print(f'load image val data done, total train number is {len(image_val_dataloader) * 4}')
+    print(f'load image val data done, total val number is {len(image_val_dataloader) * 4}')
 
     start_image_train(image_train_dataloader, image_val_dataloader, image_encoder_model, image_decoder_model, args.epoch, args.lr, args.decay_rate,
-                      args.decay_epoch, args.image_encoder_model, args.image_decoder_model, args.log_dir)
+                      args.decay_epoch, args.image_encoder_model, args.image_decoder_model, args.log_dir, args.start_epoch)
 
     print('-------------Congratulations! Image Training Done!!!-------------')
 
@@ -100,10 +101,10 @@ def video_train():
     video_val_dataloader = DataLoader(dataset=video_val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
     print(f'load video train data done, total train number is {len(video_train_dataloader)}')
-    print(f'load video val data done, total train number is {len(video_val_dataloader)}')
+    print(f'load video val data done, total val number is {len(video_val_dataloader)}')
 
     start_video_train(video_train_dataloader, video_val_dataloader, video_encoder_model, video_decoder_model, args.epoch, args.lr, args.decay_rate,
-                      args.decay_epoch, args.video_encoder_model, args.video_decoder_model, args.log_dir)
+                      args.decay_epoch, args.video_encoder_model, args.video_decoder_model, args.log_dir, args.start_epoch)
 
     print('-------------Congratulations! Image Training Done!!!-------------')
 
