@@ -5,9 +5,8 @@ from dataset.dataload import VideoDataset
 from dataset.dataload import EvalDataset
 from dataset.transforms import get_train_transforms, get_transforms, get_Eval_transforms
 
-from model.video_train_model import Video_Encoder_Model, Video_Decoder_Model
-from model.image_train_model import Image_Encoder_Model, Image_Decoder_Model
-from utils.Train_material import start_image_train, start_video_train
+from model.model import Model
+from utils.Train_material import start_train
 from utils.Predict_material import start_predict
 from utils.Evaluation_material import start_Eval
 
@@ -44,76 +43,61 @@ parser.add_argument('--predict_dataset', type=str, default="DAVIS_20",
                     help='predict_dataset')
 
 # model_path
-parser.add_argument('--image_encoder_model', type=str, default="./save_models/image_train_model/best_image_encoder_model.pth.tar", help='image_encoder_model')
-parser.add_argument('--image_decoder_model', type=str, default="./save_models/image_train_model/best_image_decoder_model.pth.tar", help='image_decoder_model')
-
-parser.add_argument('--video_encoder_model', type=str, default="./save_models/video_train_model/best_video_encoder_model.pth.tar", help='video_encoder_model')
-parser.add_argument('--video_decoder_model', type=str, default="./save_models/video_train_model/best_video_decoder_model.pth.tar", help='video_decoder_model')
+parser.add_argument('--save_model_path', type=str, default="./save_models/best_model.pth.tar", help='save_model_path')
 
 args = parser.parse_args()
 
 
 # image_train
-def image_train():
-    print("start image training!!!")
-    image_encoder_model = Image_Encoder_Model(output_stride=16, input_channels=3, pretrained=True)
-    image_decoder_model = Image_Decoder_Model()
+def train():
+    model = Model(in_channels=3)
 
-    # 数据加载
-    # train data load
-    image_train_transforms = get_train_transforms(input_size=(args.size, args.size))
-    image_train_dataset = ImageDataset(root_dir=args.image_train_path, training_set_list=args.image_train_dataset,
-                                       image_transform=image_train_transforms)
-    image_train_dataloader = DataLoader(dataset=image_train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=True, drop_last=True)
+    flag = input('select train model (image or video):')
 
-    # val data load
-    image_val_transforms = get_transforms(input_size=(args.size, args.size))
-    image_val_dataset = ImageDataset(root_dir=args.image_val_path, training_set_list=args.image_val_dataset,
-                                     image_transform=image_val_transforms)
-    image_val_dataloader = DataLoader(dataset=image_val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
+    train_dataloader = None
+    val_dataloader = None
 
-    print(f'load image train data done, total train number is {len(image_train_dataloader) * 4}')
-    print(f'load image val data done, total val number is {len(image_val_dataloader) * 4}')
+    if flag == 'image':
+        print("start image training!!!")
+        # 数据加载
+        # train data load
+        train_transforms = get_train_transforms(input_size=(args.size, args.size))
+        train_dataset = ImageDataset(root_dir=args.image_train_path, training_set_list=args.image_train_dataset,
+                                     image_transform=train_transforms)
+        train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=True, drop_last=True)
 
-    start_image_train(image_train_dataloader, image_val_dataloader, image_encoder_model, image_decoder_model, args.epoch, args.lr, args.decay_rate,
-                      args.decay_epoch, args.image_encoder_model, args.image_decoder_model, args.log_dir, args.start_epoch)
+        # val data load
+        val_transforms = get_transforms(input_size=(args.size, args.size))
+        val_dataset = ImageDataset(root_dir=args.image_val_path, training_set_list=args.image_val_dataset,
+                                   image_transform=val_transforms)
+        val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
-    print('-------------Congratulations! Image Training Done!!!-------------')
+    elif flag == 'video':
+        print("start video training!!!")
+        train_transforms = get_train_transforms(input_size=(args.size, args.size))
+        train_dataset = VideoDataset(root_dir=args.video_train_path, training_set_list=args.video_train_dataset, training=True,
+                                     transforms=train_transforms)
+        train_dataloader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=True, drop_last=True)
 
+        # val data load
+        val_transforms = get_transforms(input_size=(args.size, args.size))
+        val_dataset = VideoDataset(root_dir=args.video_val_path, training_set_list=args.video_val_dataset, training=True,
+                                   transforms=val_transforms)
+        val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
-# video_train
-def video_train():
-    print("start video training!!!")
-    video_encoder_model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=True)
-    video_decoder_model = Video_Decoder_Model()
+    print(f'load train data done, total train number is {len(train_dataloader) * 4}')
+    print(f'load val data done, total val number is {len(val_dataloader) * 4}')
 
-    # 数据加载
-    # train data load
-    video_train_transforms = get_train_transforms(input_size=(args.size, args.size))
-    video_train_dataset = VideoDataset(root_dir=args.video_train_path, training_set_list=args.video_train_dataset, training=True,
-                                       transforms=video_train_transforms)
-    video_train_dataloader = DataLoader(dataset=video_train_dataset, batch_size=args.batch_size, num_workers=4, shuffle=True, drop_last=True)
+    start_train(train_dataloader, val_dataloader, model, args.epoch, args.lr, args.decay_rate,
+                args.decay_epoch, args.save_model_path, args.log_dir, args.start_epoch)
 
-    # val data load
-    video_val_transforms = get_transforms(input_size=(args.size, args.size))
-    video_val_dataset = VideoDataset(root_dir=args.video_val_path, training_set_list=args.video_val_dataset, training=True,
-                                     transforms=video_val_transforms)
-    video_val_dataloader = DataLoader(dataset=video_val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
-
-    print(f'load video train data done, total train number is {len(video_train_dataloader)}')
-    print(f'load video val data done, total val number is {len(video_val_dataloader)}')
-
-    start_video_train(video_train_dataloader, video_val_dataloader, video_encoder_model, video_decoder_model, args.epoch, args.lr, args.decay_rate,
-                      args.decay_epoch, args.video_encoder_model, args.video_decoder_model, args.log_dir, args.start_epoch)
-
-    print('-------------Congratulations! Image Training Done!!!-------------')
+    print('-------------Congratulations! Training Done!!!-------------')
 
 
 # predict
 def predict():
     print("start video predict!!!")
-    video_encoder_model = Video_Encoder_Model(output_stride=16, input_channels=3, pretrained=True)
-    video_decoder_model = Video_Decoder_Model()
+    model = Model(in_channels=3)
 
     # 数据加载
     predict_transforms = get_transforms(input_size=(args.size, args.size))
@@ -123,8 +107,7 @@ def predict():
 
     print(f'load predict data done, total train number is {len(predict_dataloader) * 4}')
 
-    start_predict(predict_dataloader, video_encoder_model, video_decoder_model, args.video_encoder_model, args.video_decoder_model,
-                  args.predict_dataset, args.predict_data_path, args.log_dir)
+    start_predict(predict_dataloader, model, args.save_model_path, args.predict_dataset, args.predict_data_path, args.log_dir)
 
     print('-------------Congratulations! video predict Done!!!-------------')
 
@@ -146,13 +129,10 @@ def Evaluation():
 
 
 def main():
-    model = input('please select model from [image_train, video_train, predict, Evaluation]:')
+    model = input('please select model from [train, predict, Evaluation]:')
 
     if model == 'image_train':
-        image_train()
-
-    elif model == 'video_train':
-        video_train()
+        train()
 
     elif model == 'predict':
         predict()

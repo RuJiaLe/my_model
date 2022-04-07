@@ -26,5 +26,4 @@ print(end - start)
 
 print(block.size())
 
-
 print(f'model_param: {count_param(pre_model) / 1e6}')

@@ -15,9 +15,8 @@ best_val_loss = 0.0
 
 
 # val
-def val(val_dataloader, val_encoder, val_decoder):
-    val_encoder.eval()
-    val_decoder.eval()
+def val(val_dataloader, model):
+    model.eval()
 
     total_num = len(val_dataloader) * 4
     MAES, S_measures = 0.0, 0.0
@@ -26,7 +25,7 @@ def val(val_dataloader, val_encoder, val_decoder):
 
     start_time = time.time()
     for i, packs in enumerate(val_dataloader):
-        images, gts, blocks = [], [], []
+        images, gts = [], []
         for pack in packs:
             img_num = img_num + 1
             image, gt = pack["image"], pack["gt"]
@@ -36,13 +35,11 @@ def val(val_dataloader, val_encoder, val_decoder):
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
-            block = val_encoder(image)
             images.append(image)
             gts.append(gt)
-            blocks.append(block)
 
         # 解码
-        out4, out3, out2, ou1, out0 = val_decoder(blocks)
+        out4, out3, out2, ou1, out0 = model(images)
 
         # Loss 计算
         predicts = out0
@@ -94,12 +91,9 @@ def val(val_dataloader, val_encoder, val_decoder):
 
 
 # 开始训练
-def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder, optimizer_decoder,
-          Epoch, total_epoch, encoder_model_path, decoder_model_path):
-    encoder_model.train()
-    decoder_model.train()
-    encoder_model.freeze_bn()
-    decoder_model.freeze_bn()
+def train(train_data, val_data, model, optimizer, Epoch, total_epoch, model_path):
+    model.train()
+    model.freeze_bn()
 
     total_step = len(train_data)
     losses = 0.0
@@ -107,10 +101,9 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
     for i, packs in enumerate(train_data):
         i = i + 1
 
-        optimizer_encoder.zero_grad()
-        optimizer_decoder.zero_grad()
+        optimizer.zero_grad()
 
-        images, gts, blocks = [], [], []
+        images, gts = [], []
         for pack in packs:
             image, gt = pack["image"], pack["gt"]
 
@@ -119,14 +112,11 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
             else:
                 image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
-            block = encoder_model(image)
-
             images.append(image)
             gts.append(gt)
-            blocks.append(block)
 
         # 解码
-        out4, out3, out2, out1, out0 = decoder_model(blocks)  # 第4阶段, 第3阶段, 第2阶段, 第1阶段, 第0阶段
+        out4, out3, out2, out1, out0 = model(images)  # 第4阶段, 第3阶段, 第2阶段, 第1阶段, 第0阶段
 
         # Loss 计算
         loss = []
@@ -137,8 +127,7 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
         # 反向传播
         torch.autograd.backward(loss)
 
-        optimizer_encoder.step()
-        optimizer_decoder.step()
+        optimizer.step()
 
         # 显示与记录内容
         if i % 10 == 0 or i == total_step:
@@ -155,14 +144,14 @@ def train(train_data, val_data, encoder_model, decoder_model, optimizer_encoder,
 
     # 验证与模型保存
     if Epoch % 1 == 0:
-        val_loss = val(val_data, encoder_model, decoder_model)
+        val_loss = val(val_data, model)
         global best_val_loss
 
         if best_val_loss < val_loss:  # big is best
             best_val_loss = val_loss
 
-            torch.save({'epoch': Epoch, 'encoder_state_dict': encoder_model.state_dict(), 'best_val_loss': best_val_loss, 'encoder_optimizer': optimizer_encoder.state_dict()}, encoder_model_path)
-            torch.save({'epoch': Epoch, 'decoder_state_dict': decoder_model.state_dict(), 'best_val_loss': best_val_loss, 'decoder_optimizer': optimizer_decoder.state_dict()}, decoder_model_path)
+            torch.save({'epoch': Epoch, 'state_dict': model.state_dict(), 'best_val_loss': best_val_loss, 'optimizer': optimizer.state_dict()},
+                       model_path)
 
             print('this is best_model_Epoch: {}'.format(Epoch))
             logging.info('this is best_model_Epoch: {}'.format(Epoch))
@@ -175,107 +164,31 @@ else:
     device = 'cpu'
 
 
-def start_video_train(video_train_dataloader, video_val_dataloader, video_encoder_model, video_decoder_model,
-                      total_epoch, lr, decay_rate, decay_epoch, encoder_model_path, decoder_model_path, log_dir, start_epoch):
-    # log
-    logging.basicConfig(filename=log_dir + '/video_train_log.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]',
-                        level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
-
-    # 预训练模型加载
-    image_encoder_model_path = "./save_models/image_train_model/best_image_encoder_model.pth.tar"
-    image_decoder_model_path = "./save_models/image_train_model/best_image_decoder_model.pth.tar"
-
-    if os.path.exists(image_encoder_model_path):
-        print('Loading encoder_model from: {}'.format(image_encoder_model_path))
-        video_encoder_model.load_state_dict(torch.load(image_encoder_model_path, map_location=torch.device(device))['encoder_state_dict'])
-
-    if os.path.exists(image_decoder_model_path):
-        Decoder_dict = video_decoder_model.state_dict()
-        pre_trained_dict = torch.load(image_decoder_model_path, map_location=torch.device(device))['decoder_state_dict']
-
-        for k, v in pre_trained_dict.items():
-            if k in Decoder_dict:
-                print("load:%s" % k)
-        pre_trained_dict = {k: v for k, v in pre_trained_dict.items() if (k in Decoder_dict)}
-        Decoder_dict.update(pre_trained_dict)
-        video_decoder_model.load_state_dict(Decoder_dict)
-        print('Loading Decoder_Model state dick done!!!')
-
-    # 加载至cuda
-    if torch.cuda.is_available():
-        video_encoder_model.cuda()
-        video_decoder_model.cuda()
-
-    # 优化器
-    video_optimizer_encoder = optim.Adam(video_encoder_model.parameters(), lr=lr)
-    video_optimizer_decoder = optim.Adam(video_decoder_model.parameters(), lr=lr)
-
-    # 加载模型
-    if os.path.exists(encoder_model_path):
-        checkpoint = torch.load(encoder_model_path, map_location=torch.device(device))
-        start_epoch = checkpoint['epoch']
-
-        global best_val_loss
-        best_val_loss = checkpoint['best_val_loss']
-        video_encoder_model.load_state_dict(checkpoint["encoder_state_dict"])
-        if "encoder_optimizer" in checkpoint:
-            video_optimizer_encoder.load_state_dict(checkpoint["encoder_optimizer"])
-
-    if os.path.exists(decoder_model_path):
-        checkpoint = torch.load(decoder_model_path, map_location=torch.device(device))
-        start_epoch = checkpoint['epoch']
-
-        best_val_loss = checkpoint['best_val_loss']
-        video_decoder_model.load_state_dict(checkpoint["decoder_state_dict"])
-        if "decoder_optimizer" in checkpoint:
-            video_optimizer_decoder.load_state_dict(checkpoint["decoder_optimizer"])
-
-    for epoch in range(start_epoch, total_epoch + 1):
-        adjust_lr(video_optimizer_encoder, epoch, decay_rate, decay_epoch)
-        adjust_lr(video_optimizer_decoder, epoch, decay_rate, decay_epoch)
-
-        train(video_train_dataloader, video_val_dataloader, video_encoder_model, video_decoder_model,
-              video_optimizer_encoder, video_optimizer_decoder, epoch, total_epoch, encoder_model_path, decoder_model_path)
-
-
-def start_image_train(image_train_dataloader, image_val_dataloader, image_encoder_model, image_decoder_model,
-                      total_epoch, lr, decay_rate, decay_epoch, encoder_model_path, decoder_model_path, log_dir, start_epoch):
+def start_train(train_dataloader, val_dataloader, model, total_epoch,
+                lr, decay_rate, decay_epoch, model_path, log_dir, start_epoch):
     # log
     logging.basicConfig(filename=log_dir + '/image_train_log.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]',
                         level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
 
     # 加载至cuda
     if torch.cuda.is_available():
-        image_encoder_model.cuda()
-        image_decoder_model.cuda()
+        model.cuda()
 
     # 优化器
-    image_optimizer_encoder = optim.Adam(image_encoder_model.parameters(), lr=lr)
-    image_optimizer_decoder = optim.Adam(image_decoder_model.parameters(), lr=lr)
+    optimizer = optim.Adam(model.parameters(), lr=lr)
 
     # 加载模型
-    if os.path.exists(encoder_model_path):
-        checkpoint = torch.load(encoder_model_path, map_location=torch.device(device))
+    if os.path.exists(model_path):
+        checkpoint = torch.load(model_path, map_location=torch.device(device))
         start_epoch = checkpoint['epoch']
 
         global best_val_loss
         best_val_loss = checkpoint['best_val_loss']
-        image_encoder_model.load_state_dict(checkpoint["encoder_state_dict"])
-        if "encoder_optimizer" in checkpoint:
-            image_optimizer_encoder.load_state_dict(checkpoint["encoder_optimizer"])
-
-    if os.path.exists(decoder_model_path):
-        checkpoint = torch.load(decoder_model_path, map_location=torch.device(device))
-        start_epoch = checkpoint['epoch']
-
-        best_val_loss = checkpoint['best_val_loss']
-        image_decoder_model.load_state_dict(checkpoint["decoder_state_dict"])
-        if "decoder_optimizer" in checkpoint:
-            image_optimizer_decoder.load_state_dict(checkpoint["decoder_optimizer"])
+        model.load_state_dict(checkpoint["state_dict"])
+        if "optimizer" in checkpoint:
+            optimizer.load_state_dict(checkpoint["optimizer"])
 
     for epoch in range(start_epoch, total_epoch + 1):
-        adjust_lr(image_optimizer_encoder, epoch, decay_rate, decay_epoch)
-        adjust_lr(image_optimizer_decoder, epoch, decay_rate, decay_epoch)
+        adjust_lr(optimizer, epoch, decay_rate, decay_epoch)
 
-        train(image_train_dataloader, image_val_dataloader, image_encoder_model, image_decoder_model,
-              image_optimizer_encoder, image_optimizer_decoder, epoch, total_epoch, encoder_model_path, decoder_model_path)
+        train(train_dataloader, val_dataloader, model, optimizer, epoch, total_epoch, model_path)
