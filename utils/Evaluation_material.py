@@ -6,8 +6,8 @@ import logging
 
 
 # Eval
-def Eval(dataset, dataloader):
-    total_num = len(dataloader) * 4
+def Eval(dataset, dataloader, batch_size):
+    total_num = len(dataloader) * 4 * batch_size
     MAES, E_measures, S_measures = 0.0, 0.0, 0.0
     img_num = 0
     avg_p, avg_r = 0.0, 0.0
@@ -15,24 +15,29 @@ def Eval(dataset, dataloader):
     start_time = time.time()
     for j, packs in enumerate(dataloader):
         for pack in packs:
-            img_num = img_num + 1
+
             predict, gt = pack['predict'], pack['gt']
             if torch.cuda.is_available():
-                predict, gt = Variable(predict.cuda(), requires_grad=False), Variable(gt.cuda(), requires_grad=False)
+                predict_, gt_ = Variable(predict.cuda(), requires_grad=False), Variable(gt.cuda(), requires_grad=False)
             else:
-                predict, gt = Variable(predict, requires_grad=False), Variable(gt, requires_grad=False)
+                predict_, gt_ = Variable(predict, requires_grad=False), Variable(gt, requires_grad=False)
 
-            mae = Eval_mae(predict, gt)
-            MAES += mae.data
+            for i in range(batch_size):
+                img_num = img_num + 1
+                predict = predict_[i, :, :, :].unsqueeze(0)
+                gt = gt_[i, :, :, :].unsqueeze(0)
 
-            prec, recall = Eval_F_measure(predict, gt)
-            avg_p += prec.data
-            avg_r += recall.data
+                mae = Eval_mae(predict, gt)
+                MAES += mae.data
 
-            E_measure = Eval_E_measure(predict, gt)
-            E_measures += E_measure.data
-            S_measure = Eval_S_measure(predict, gt)
-            S_measures += S_measure.data
+                prec, recall = Eval_F_measure(predict, gt)
+                avg_p += prec.data
+                avg_r += recall.data
+
+                E_measure = Eval_E_measure(predict, gt)
+                E_measures += E_measure.data
+                S_measure = Eval_S_measure(predict, gt)
+                S_measures += S_measure.data
 
         if img_num % 1 == 0:
             print('dataset: {}, done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, E_measure: {:0.4f}, S_measure: {:0.4f}'.
@@ -62,8 +67,8 @@ def Eval(dataset, dataloader):
     logging.info('{}'.format('*' * 100))
 
 
-def start_Eval(data, Eval_dataloader, log_dir):
+def start_Eval(data, Eval_dataloader, log_dir, batch_size):
     logging.basicConfig(filename=log_dir + '/val_log.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]',
                         level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
 
-    Eval(data, Eval_dataloader)
+    Eval(data, Eval_dataloader, batch_size)

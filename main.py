@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser()
 # parameters
 parser.add_argument('--epoch', type=int, default=60, help='epoch number')
 parser.add_argument('--lr', type=float, default=1e-4, help='learning rate')
-parser.add_argument('--batch_size', type=int, default=1, help='training batch size')
+parser.add_argument('--batch_size', type=int, default=2, help='training batch size')
 parser.add_argument('--size', type=int, default=256, help='training dataset size')
 parser.add_argument('--decay_rate', type=float, default=0.5, help='decay rate of learning rate')
 parser.add_argument('--decay_epoch', type=int, default=8, help='every n epochs decay learning rate')
@@ -85,11 +85,11 @@ def train():
                                    transforms=val_transforms)
         val_dataloader = DataLoader(dataset=val_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
-    print(f'load train data done, total train number is {len(train_dataloader) * 4}')
-    print(f'load val data done, total val number is {len(val_dataloader) * 4}')
+    print(f'load train data done, total train number is {len(train_dataloader) * 4 * args.batch_size}')
+    print(f'load val data done, total val number is {len(val_dataloader) * 4 * args.batch_size}')
 
     start_train(train_dataloader, val_dataloader, model, args.epoch, args.lr, args.decay_rate,
-                args.decay_epoch, args.save_model_path, args.log_dir, args.start_epoch)
+                args.decay_epoch, args.save_model_path, args.log_dir, args.start_epoch, args.batch_size)
 
     print('-------------Congratulations! Training Done!!!-------------')
 
@@ -105,9 +105,9 @@ def predict():
                                    transforms=predict_transforms)
     predict_dataloader = DataLoader(dataset=predict_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
-    print(f'load predict data done, total train number is {len(predict_dataloader) * 4}')
+    print(f'load predict data done, total train number is {len(predict_dataloader) * 4 * args.batch_size}')
 
-    start_predict(predict_dataloader, model, args.save_model_path, args.predict_dataset, args.predict_data_path, args.log_dir)
+    start_predict(predict_dataloader, model, args.save_model_path, args.predict_dataset, args.predict_data_path, args.log_dir, args.batch_size)
 
     print('-------------Congratulations! video predict Done!!!-------------')
 
@@ -121,9 +121,9 @@ def Evaluation():
                                transforms=Eval_transforms)
     Eval_dataloader = DataLoader(dataset=Eval_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=True)
 
-    print(f'load evaluation data done, total train number is {len(Eval_dataloader) * 4}')
+    print(f'load evaluation data done, total train number is {len(Eval_dataloader) * 4 * args.batch_size}')
 
-    start_Eval(args.predict_dataset, Eval_dataloader, args.log_dir)
+    start_Eval(args.predict_dataset, Eval_dataloader, args.log_dir, args.batch_size)
 
     print('-------------Congratulations! Evaluation Done!!!-------------')
 
@@ -131,7 +131,7 @@ def Evaluation():
 def main():
     model = input('please select model from [train, predict, Evaluation]:')
 
-    if model == 'image_train':
+    if model == 'train':
         train()
 
     elif model == 'predict':

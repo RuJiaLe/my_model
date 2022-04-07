@@ -15,10 +15,10 @@ best_val_loss = 0.0
 
 
 # val
-def val(val_dataloader, model):
+def val(val_dataloader, model, batch_size):
     model.eval()
 
-    total_num = len(val_dataloader) * 4
+    total_num = len(val_dataloader) * 4 * batch_size
     MAES, S_measures = 0.0, 0.0
     img_num = 0
     avg_p, avg_r = 0.0, 0.0
@@ -27,7 +27,6 @@ def val(val_dataloader, model):
     for i, packs in enumerate(val_dataloader):
         images, gts = [], []
         for pack in packs:
-            img_num = img_num + 1
             image, gt = pack["image"], pack["gt"]
 
             if torch.cuda.is_available():
@@ -44,16 +43,21 @@ def val(val_dataloader, model):
         # Loss 计算
         predicts = out0
 
-        for predict, gt in (zip(predicts, gts)):
-            mae = Eval_mae(predict, gt)
-            MAES += mae.data
+        for predict_, gt_ in (zip(predicts, gts)):
+            for k in range(batch_size):
+                predict = predict_[k, :, :, :].unsqueeze(0)
+                gt = gt_[k, :, :, :].unsqueeze(0)
 
-            prec, recall = Eval_F_measure(predict, gt)
-            avg_p += prec.data
-            avg_r += recall.data
+                img_num = img_num + 1
+                mae = Eval_mae(predict, gt)
+                MAES += mae.data
 
-            S_measure = Eval_S_measure(predict, gt)
-            S_measures += S_measure.data
+                prec, recall = Eval_F_measure(predict, gt)
+                avg_p += prec.data
+                avg_r += recall.data
+
+                S_measure = Eval_S_measure(predict, gt)
+                S_measures += S_measure.data
 
         if img_num % 200 == 0:
             print('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, S_measure: {:0.4f}'.
@@ -91,7 +95,7 @@ def val(val_dataloader, model):
 
 
 # 开始训练
-def train(train_data, val_data, model, optimizer, Epoch, total_epoch, model_path):
+def train(train_data, val_data, model, optimizer, Epoch, total_epoch, model_path, batch_size):
     model.train()
     model.freeze_bn()
 
@@ -144,7 +148,7 @@ def train(train_data, val_data, model, optimizer, Epoch, total_epoch, model_path
 
     # 验证与模型保存
     if Epoch % 1 == 0:
-        val_loss = val(val_data, model)
+        val_loss = val(val_data, model, batch_size)
         global best_val_loss
 
         if best_val_loss < val_loss:  # big is best
@@ -165,7 +169,7 @@ else:
 
 
 def start_train(train_dataloader, val_dataloader, model, total_epoch,
-                lr, decay_rate, decay_epoch, model_path, log_dir, start_epoch):
+                lr, decay_rate, decay_epoch, model_path, log_dir, start_epoch, batch_size):
     # log
     logging.basicConfig(filename=log_dir + '/image_train_log.log', format='[%(asctime)s-%(filename)s-%(levelname)s:%(message)s]',
                         level=logging.INFO, filemode='a', datefmt='%Y-%m-%d %I:%M:%S %p')
@@ -191,4 +195,4 @@ def start_train(train_dataloader, val_dataloader, model, total_epoch,
     for epoch in range(start_epoch, total_epoch + 1):
         adjust_lr(optimizer, epoch, decay_rate, decay_epoch)
 
-        train(train_dataloader, val_dataloader, model, optimizer, epoch, total_epoch, model_path)
+        train(train_dataloader, val_dataloader, model, optimizer, epoch, total_epoch, model_path, batch_size)
