@@ -23,75 +23,76 @@ def val(val_dataloader, model, batch_size):
     img_num = 0
     avg_p, avg_r = 0.0, 0.0
 
-    start_time = time.time()
-    for i, packs in enumerate(val_dataloader):
-        images, gts = [], []
-        for pack in packs:
-            image, gt = pack["image"], pack["gt"]
+    with torch.no_grad():
+        start_time = time.time()
+        for i, packs in enumerate(val_dataloader):
+            images, gts = [], []
+            for pack in packs:
+                image, gt = pack["image"], pack["gt"]
 
-            if torch.cuda.is_available():
-                image, gt = Variable(image.cuda(), requires_grad=False), Variable(gt.cuda(), requires_grad=False)
-            else:
-                image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
+                if torch.cuda.is_available():
+                    image, gt = Variable(image.cuda(), requires_grad=False), Variable(gt.cuda(), requires_grad=False)
+                else:
+                    image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
 
-            images.append(image)
-            gts.append(gt)
+                images.append(image)
+                gts.append(gt)
 
-        # 解码
-        out4, out3, out2, ou1, out0 = model(images)
+            # 解码
+            out4, out3, out2, ou1, out0 = model(images)
 
-        # Loss 计算
-        predicts = out0
+            # Loss 计算
+            predicts = out0
 
-        for predict_, gt_ in (zip(predicts, gts)):
-            for k in range(batch_size):
-                predict = predict_[k, :, :, :].unsqueeze(0)
-                gt = gt_[k, :, :, :].unsqueeze(0)
+            for predict_, gt_ in (zip(predicts, gts)):
+                for k in range(batch_size):
+                    predict = predict_[k, :, :, :].unsqueeze(0)
+                    gt = gt_[k, :, :, :].unsqueeze(0)
 
-                img_num = img_num + 1
-                mae = Eval_mae(predict, gt)
-                MAES += mae.data
+                    img_num = img_num + 1
+                    mae = Eval_mae(predict, gt)
+                    MAES += mae.data
 
-                prec, recall = Eval_F_measure(predict, gt)
-                avg_p += prec.data
-                avg_r += recall.data
+                    prec, recall = Eval_F_measure(predict, gt)
+                    avg_p += prec.data
+                    avg_r += recall.data
 
-                S_measure = Eval_S_measure(predict, gt)
-                S_measures += S_measure.data
+                    S_measure = Eval_S_measure(predict, gt)
+                    S_measures += S_measure.data
 
-        if img_num % 200 == 0:
-            print('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, S_measure: {:0.4f}'.
-                  format((img_num / total_num) * 100, img_num, total_num, MAES / img_num, S_measures / img_num))
+            if img_num % 200 == 0:
+                print('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, S_measure: {:0.4f}'.
+                      format((img_num / total_num) * 100, img_num, total_num, MAES / img_num, S_measures / img_num))
 
-    avg_mae = MAES / img_num
+        avg_mae = MAES / img_num
 
-    beta2 = 0.3
-    avg_p = avg_p / img_num
-    avg_r = avg_r / img_num
-    score = (1 + beta2) * avg_p * avg_r / (beta2 * avg_p + avg_r)
-    score[score != score] = 0
-    max_F_measure = score.max()
+        beta2 = 0.3
+        avg_p = avg_p / img_num
+        avg_r = avg_r / img_num
+        score = (1 + beta2) * avg_p * avg_r / (beta2 * avg_p + avg_r)
+        score[score != score] = 0
+        max_F_measure = score.max()
 
-    avg_S_measure = S_measures / img_num
+        avg_S_measure = S_measures / img_num
 
-    end_time = time.time()
-    total_speed = end_time - start_time
+        end_time = time.time()
+        total_speed = end_time - start_time
 
-    total_loss = (1 - avg_mae) + max_F_measure + avg_S_measure
+        total_loss = (1 - avg_mae) + max_F_measure + avg_S_measure
 
-    print('*' * 50)
-    print('#val# {}, total_img: {}, avg_mae: {:0.4f}, max_F_measure: {:0.4f}, avg_S_measure: {:0.4f}, total_speed: {:0.4f}'.
-          format(datetime.now().strftime('%m/%d %H:%M'), img_num, avg_mae, max_F_measure, avg_S_measure, total_speed))
-    print('#val# total_loss: {:0.4f}'.format(total_loss))
-    print('*' * 50)
+        print('*' * 50)
+        print('#val# {}, total_img: {}, avg_mae: {:0.4f}, max_F_measure: {:0.4f}, avg_S_measure: {:0.4f}, total_speed: {:0.4f}'.
+              format(datetime.now().strftime('%m/%d %H:%M'), img_num, avg_mae, max_F_measure, avg_S_measure, total_speed))
+        print('#val# total_loss: {:0.4f}'.format(total_loss))
+        print('*' * 50)
 
-    logging.info('{}'.format('*' * 100))
-    logging.info('#val# {}, total_img: {} avg_mae: {:0.4f}, max_F_measure: {:0.4f}, avg_S_measure: {:0.4f}, total_speed: {:0.4f}'.
-                 format(datetime.now().strftime('%m/%d %H:%M'), img_num, avg_mae, max_F_measure, avg_S_measure, total_speed))
-    logging.info('#val# total_loss: {:0.4f}'.format(total_loss))
-    logging.info('{}'.format('*' * 100))
+        logging.info('{}'.format('*' * 100))
+        logging.info('#val# {}, total_img: {} avg_mae: {:0.4f}, max_F_measure: {:0.4f}, avg_S_measure: {:0.4f}, total_speed: {:0.4f}'.
+                     format(datetime.now().strftime('%m/%d %H:%M'), img_num, avg_mae, max_F_measure, avg_S_measure, total_speed))
+        logging.info('#val# total_loss: {:0.4f}'.format(total_loss))
+        logging.info('{}'.format('*' * 100))
 
-    return total_loss
+        return total_loss
 
 
 # 开始训练

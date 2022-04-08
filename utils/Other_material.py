@@ -298,7 +298,11 @@ def Eval_E_measure(pred, gt):
     max_e = 0.0
     with torch.no_grad():
         max_e = _eval_e(pred, gt, 255)
-        return max_e
+
+        if max_e == max_e:
+            return max_e
+        else:
+            return torch.tensor(0.5)
 
 
 # S-measure
@@ -316,7 +320,10 @@ def Eval_S_measure(pred, gt):
             Q = alpha * _S_object(pred, gt) + (1 - alpha) * _S_region(pred, gt)
             if Q.item() < 0:
                 # Q = torch.FLoatTensor([0.0])
-                Q = torch.tensor(0.0)
+                Q = torch.tensor([0.0])
 
         avg_q = Q
-        return avg_q
+        if avg_q == avg_q:
+            return avg_q
+        else:
+            return torch.tensor(0.5)

@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="2022/4/7 8：30">
+    <list default="true" id="f9502dd0-cd57-45dd-8460-62ab73dde6f3" name="变更" comment="2022/4/7 12:02">
+      <change afterPath="$PROJECT_DIR$/SSA/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SSA/drop.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SSA/helpers.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SSA/registry.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SSA/ssa.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SSA/utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/SSA/weight_init.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/speed.py" beforeDir="false" afterPath="$PROJECT_DIR$/speed.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test2.py" beforeDir="false" afterPath="$PROJECT_DIR$/test2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/Evaluation_material.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/Evaluation_material.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/Other_material.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/Other_material.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/Predict_material.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/Predict_material.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/Train_material.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/Train_material.py" afterDir="false" />
     </list>
@@ -35,7 +40,7 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../triplet-attention-master" />
     <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
-  <component name="RunManager" selected="Python.main">
+  <component name="RunManager" selected="Python.test2">
     <configuration name="dstt_module" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="my_model" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -143,8 +148,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main" />
         <item itemvalue="Python.test2" />
+        <item itemvalue="Python.main" />
         <item itemvalue="Python.speed" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.dstt_module" />
@@ -370,7 +375,14 @@
       <option name="project" value="LOCAL" />
       <updated>1649291432626</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="2022/4/7 12:02">
+      <created>1649304155598</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1649304155598</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -385,7 +397,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="update3" />
     <MESSAGE value="update4" />
     <MESSAGE value="test" />
     <MESSAGE value="final" />
@@ -410,6 +421,7 @@
     <MESSAGE value="2022/4/5 11:49" />
     <MESSAGE value="2022/4/6 15:43" />
     <MESSAGE value="2022/4/7 8：30" />
-    <option name="LAST_COMMIT_MESSAGE" value="2022/4/7 8：30" />
+    <MESSAGE value="2022/4/7 12:02" />
+    <option name="LAST_COMMIT_MESSAGE" value="2022/4/7 12:02" />
   </component>
 </project>
