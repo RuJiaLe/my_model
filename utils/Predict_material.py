@@ -3,6 +3,9 @@ import torch
 from torch.autograd import Variable
 import time
 import logging
+from torchvision.transforms import functional as TF
+from tqdm import tqdm
+import PIL.ImageOps
 
 from .Other_material import Save_result
 
@@ -16,8 +19,7 @@ def predict(dataloader, model, dataset, predict_data_path, batch_size):
     model.eval()
 
     with torch.no_grad():
-        for i, packs in enumerate(dataloader):
-            i = i + 1
+        for packs in tqdm(dataloader):
             images, paths, gts = [], [], []
             in_time = time.time()
             for pack in packs:
@@ -33,17 +35,16 @@ def predict(dataloader, model, dataset, predict_data_path, batch_size):
                 gts.append(gt)
 
             # 解码
-            out4, out3, out2, out1, out0 = model(images)
+            out = model(images)
 
             # 显示内容
             out_time = time.time()
             speed += (out_time - in_time)
-            print('dataset:{}, done: {:0.2f}%, Save: {}/{}, speed:{:0.4f}'.format(dataset, (i / img_num) * 100, i, img_num, out_time - in_time))
 
             # 保存图片
             for k in range(len(paths)):
                 for j in range(batch_size):
-                    img = out0[k][j, :, :, :].unsqueeze(0)
+                    img = out[-1][k][j, :, :, :]
                     path = paths[k][j]
                     Save_result(img, path, predict_data_path)
 
@@ -66,8 +67,8 @@ def start_predict(predict_dataloader, model, model_path, dataset, predict_data_p
         model.cuda()
 
     # 加载模型
-    if os.path.exists(model_path):
-        checkpoint = torch.load(model_path, map_location=torch.device(device))
-        model.load_state_dict(checkpoint["state_dict"])
+    # if os.path.exists(model_path):
+    #     checkpoint = torch.load(model_path, map_location=torch.device(device))
+    #     model.load_state_dict(checkpoint["state_dict"])
 
     predict(predict_dataloader, model, dataset, predict_data_path, batch_size)

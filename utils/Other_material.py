@@ -5,6 +5,7 @@ import torch
 from torch.autograd import Variable
 from math import exp
 import torch.nn.functional as F
+import torch.nn as nn
 
 
 # ******************************计算模型参数******************************
@@ -35,7 +36,6 @@ def Save_result(img, frame_image_path, save_path):
 
     image_save_path = image_save_path + '/' + path_split[3][:-4] + '.png'
 
-    img = img[0, :, :, :]
     img = img.detach().cpu().numpy().squeeze()
 
     img = (img - img.min()) / (img.max() - img.min() + 1e-20)
@@ -135,6 +135,16 @@ class SSIM(torch.nn.Module):
             self.channel = channel
 
         return _ssim(img1, img2, window, self.window_size, channel, self.size_average)
+
+
+# S_loss
+class S_Loss(nn.Module):
+    def __init__(self):
+        super(S_Loss, self).__init__()
+
+    def forward(self, x, label):
+        loss = F.smooth_l1_loss(x, label)
+        return loss
 
 
 # ******************************Eval******************************
@@ -302,7 +312,7 @@ def Eval_E_measure(pred, gt):
         if max_e == max_e:
             return max_e
         else:
-            return torch.tensor(0.5)
+            return torch.tensor([0.5])
 
 
 # S-measure
@@ -326,4 +336,4 @@ def Eval_S_measure(pred, gt):
         if avg_q == avg_q:
             return avg_q
         else:
-            return torch.tensor(0.5)
+            return torch.tensor([0.5])

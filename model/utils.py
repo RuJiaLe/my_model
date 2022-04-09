@@ -10,17 +10,11 @@ class En_Block(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(En_Block, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=(3, 3), padding=4, dilation=(4, 4))
-        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
         self.relu1 = nn.ReLU(inplace=True)
 
         self.attention1 = TripletAttention()
-
-        self.conv2 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), padding=4, dilation=(4, 4))
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.relu2 = nn.ReLU(inplace=True)
-
-        self.attention2 = TripletAttention()
 
         self.conv1x1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, 1))
 
@@ -29,21 +23,15 @@ class En_Block(nn.Module):
     def forward(self, x):
         out = self.conv1(x)
         out = self.bn1(out)
-        out = self.relu1(out)
-
-        out = self.attention1(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
 
         x = self.conv1x1(x)
 
         out = out + x
-        out = self.relu2(out)
-
-        out = self.attention2(out)
+        out = self.relu1(out)
 
         out = self.max_pool(out)
+
+        out = self.attention1(out)
 
         return out
 
@@ -53,17 +41,11 @@ class De_Block(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(De_Block, self).__init__()
 
-        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=in_channels, kernel_size=(3, 3), padding=4, dilation=(4, 4))
-        self.bn1 = nn.BatchNorm2d(in_channels)
+        self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
         self.relu1 = nn.ReLU(inplace=True)
 
         self.attention1 = TripletAttention()
-
-        self.conv2 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(3, 3), padding=4, dilation=(4, 4))
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        self.relu2 = nn.ReLU(inplace=True)
-
-        self.attention2 = TripletAttention()
 
         self.conv1x1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=(1, 1))
 
@@ -72,21 +54,15 @@ class De_Block(nn.Module):
     def forward(self, x):
         out = self.conv1(x)
         out = self.bn1(out)
-        out = self.relu1(out)
-
-        out = self.attention1(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
 
         x = self.conv1x1(x)
 
         out = out + x
-        out = self.relu2(out)
-
-        out = self.attention2(out)
+        out = self.relu1(out)
 
         out = self.Up_sample_2(out)
+
+        out = self.attention1(out)
 
         return out
 
@@ -111,18 +87,13 @@ class CBS(nn.Module):
 class CBR(nn.Module):
     def __init__(self, input_channels, out_channels):
         super(CBR, self).__init__()
-        self.conv = nn.Conv2d(in_channels=input_channels, out_channels=out_channels, kernel_size=(1, 1))
+        self.conv = nn.Conv2d(in_channels=input_channels, out_channels=out_channels, kernel_size=(3, 3), padding=1)
         self.bn = nn.BatchNorm2d(out_channels)
         self.relu = nn.ReLU(inplace=True)
-
-        self.conv1x1 = nn.Conv2d(in_channels=input_channels, out_channels=out_channels, kernel_size=(1, 1))
 
     def forward(self, x):
         out = self.conv(x)
         out = self.bn(out)
-
-        out = out + self.conv1x1(x)
-
         out = self.relu(out)
 
         return out
@@ -217,7 +188,7 @@ class Video_Decoder_Part(nn.Module):
         out = self.relu3(out)
 
         x = self.conv1x1(x)
-        out = out * x
+        out = out + x
 
         out = self.Up_sample_2(out)
 
@@ -233,15 +204,12 @@ class refine_module(nn.Module):
         self.bn1 = nn.BatchNorm2d(64)
         self.relu1 = nn.ReLU(inplace=True)
 
-        self.en_block1 = En_Block(64, 128)
-        self.en_block2 = En_Block(128, 256)
-        self.en_block3 = En_Block(256, 512)
-        self.en_block4 = En_Block(512, 512)
+        self.en_block = En_Block(64, 64)
 
-        self.de_block1 = De_Block(512, 512)
-        self.de_block2 = De_Block(512, 256)
-        self.de_block3 = De_Block(256, 128)
-        self.de_block4 = De_Block(128, 64)
+        self.de_block1 = De_Block(64, 64)
+        self.de_block2 = De_Block(64, 64)
+
+        self.CBR = CBR(128, 64)
 
         self.conv2 = nn.Conv2d(in_channels=64, out_channels=out_channels, kernel_size=(3, 3), padding=1)
         self.bn2 = nn.BatchNorm2d(out_channels)
@@ -252,17 +220,19 @@ class refine_module(nn.Module):
         out = self.bn1(out)
         out = self.relu1(out)
 
-        out = self.en_block1(out)
-        out = self.en_block2(out)
-        out = self.en_block3(out)
-        out = self.en_block4(out)
+        encoders = [out]
+        for i in range(4):
+            encoder = self.en_block(encoders[i])
+            encoders.append(encoder)
 
-        out = self.de_block1(out)
-        out = self.de_block2(out)
-        out = self.de_block3(out)
-        out = self.de_block4(out)
+        out1 = self.de_block1(encoders[4])
+        decoders = [out1]
 
-        out = self.conv2(out)
+        for i in range(3):
+            decoder = self.de_block2(self.CBR(torch.cat((decoders[i], encoders[-(i + 2)]), dim=1)))
+            decoders.append(decoder)
+
+        out = self.conv2(decoders[-1])
         out = self.bn2(out)
         out = self.sigmoid(out)
 

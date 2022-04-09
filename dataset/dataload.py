@@ -7,17 +7,17 @@ import PIL.ImageOps
 
 
 class VideoDataset(Dataset):
-    def __init__(self, root_dir="./video_data/", training_set_list=[], video_clip=4, time_interval=1,
-                 training=True, transforms=None):
+    def __init__(self, root_dir="", train_set_list=None, training=True, transforms=None, clip_len=4):
         super(VideoDataset, self).__init__()
 
         self.root_dir = root_dir
-        self.video_clip = video_clip
+        self.clip_len = clip_len
         self.training = training
         self.transforms = transforms
+        self.train_set_list = train_set_list
         self.frames = []
 
-        for train_set in training_set_list:
+        for train_set in self.train_set_list:
             video_root = os.path.join(root_dir, train_set).replace('\\', '/')
             sequence_list = sorted(os.listdir(video_root))
 
@@ -47,13 +47,13 @@ class VideoDataset(Dataset):
     def get_clips(self, sequence_info):
         clips = []
 
-        for i in range(int(len(sequence_info) / self.video_clip)):
-            clips.append(sequence_info[self.video_clip * i: self.video_clip * (i + 1)])
+        for i in range(int(len(sequence_info) / self.clip_len)):
+            clips.append(sequence_info[self.clip_len * i: self.clip_len * (i + 1)])
 
-        finish = self.video_clip * (int(len(sequence_info) / self.video_clip))
+        finish = self.clip_len * (int(len(sequence_info) / self.clip_len))
 
         if finish < len(sequence_info):
-            clips.append(sequence_info[len(sequence_info) - self.video_clip: len(sequence_info)])
+            clips.append(sequence_info[len(sequence_info) - self.clip_len: len(sequence_info)])
 
         return clips
 
@@ -90,14 +90,15 @@ class VideoDataset(Dataset):
 
 
 class ImageDataset(Dataset):
-    def __init__(self, root_dir="./pre_train_data", training_set_list=["DUTS"], image_transform=None, clip=4):
+    def __init__(self, root_dir="", train_set_list=None, image_transform=None, clip_len=4):
         super(ImageDataset, self).__init__()
         self.root_dir = root_dir
         self.transforms = image_transform
-        self.clip = clip
+        self.clip_len = clip_len
         self.lists = []
+        self.train_set_list = train_set_list
 
-        for train_set in training_set_list:
+        for train_set in self.train_set_list:
             image_root = os.path.join(root_dir, train_set).replace('\\', '/')
             image_info = self.get_image_list(image_root)
             self.lists += self.get_clips(image_info)
@@ -120,7 +121,11 @@ class ImageDataset(Dataset):
         clips = []
 
         for i in range(int(len(image_info))):
-            clips.append([image_info[i], image_info[i], image_info[i], image_info[i]])
+            image_info_list = []
+            for _ in range(self.clip_len):
+                image_info_list.append(image_info[i])
+
+            clips.append(image_info_list)
 
         return clips
 
@@ -195,8 +200,6 @@ class ImageDataset(Dataset):
         gt_path = image_info["gt_path"]
         gt = Image.open(gt_path).convert("L")
 
-        gt = PIL.ImageOps.invert(gt)
-
         sample = {"image": image, "gt": gt, "path": image_path}
 
         return sample
@@ -226,17 +229,17 @@ class ImageDataset(Dataset):
 
 # Eval_data load
 class EvalDataset(Dataset):
-    def __init__(self, root_dir="./predict_data/", training_set_list=[], video_clip=4, time_interval=1,
-                 training=True, transforms=None):
+    def __init__(self, root_dir="./predict_data/", train_set_list=None, training=True, transforms=None, clip_len=4):
         super(EvalDataset, self).__init__()
 
         self.root_dir = root_dir
-        self.video_clip = video_clip
+        self.clip_len = clip_len
         self.training = training
         self.transforms = transforms
         self.frames = []
+        self.train_set_list = train_set_list
 
-        for train_set in training_set_list:
+        for train_set in self.train_set_list:
             video_root = os.path.join(root_dir, train_set).replace('\\', '/')
             sequence_list = sorted(os.listdir(video_root))
 
@@ -263,13 +266,13 @@ class EvalDataset(Dataset):
     def get_clips(self, sequence_info):
         clips = []
 
-        for i in range(int(len(sequence_info) / self.video_clip)):
-            clips.append(sequence_info[self.video_clip * i: self.video_clip * (i + 1)])
+        for i in range(int(len(sequence_info) / self.clip_len)):
+            clips.append(sequence_info[self.clip_len * i: self.clip_len * (i + 1)])
 
-        finish = self.video_clip * (int(len(sequence_info) / self.video_clip))
+        finish = self.clip_len * (int(len(sequence_info) / self.clip_len))
 
         if finish < len(sequence_info):
-            clips.append(sequence_info[len(sequence_info) - self.video_clip: len(sequence_info)])
+            clips.append(sequence_info[len(sequence_info) - self.clip_len: len(sequence_info)])
 
         return clips
 

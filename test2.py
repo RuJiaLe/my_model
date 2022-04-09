@@ -16,11 +16,16 @@ import math
 #
 # print(f'model_parameters: {count_param(model) / 1e6}')
 
-a = float('nan')
-# a = 1
+a = torch.tensor([])
 
-if a == a:
-    print(a)
-else:
-    print('error')
+x1 = torch.rand(1, 3, 256, 256)
+x2 = torch.rand(1, 3, 256, 256)
+x3 = torch.rand(1, 3, 256, 256)
+x4 = torch.rand(1, 3, 256, 256)
 
+a += x1
+a += x2
+a += x3
+a += x4
+
+print(len(a))

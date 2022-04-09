@@ -58,12 +58,12 @@ import argparse
 from dataset.dataload import VideoDataset, ImageDataset
 from dataset.transforms import get_train_transforms, get_transforms
 from torch.utils.data import DataLoader
-from model.video_train_model import Video_Encoder_Model, Video_Decoder_Model
 import torch.optim as optim
 from datetime import datetime
 from Loss import multi_bce_loss_fusion
 import logging
 import time
+from torchvision.transforms import functional as TF
 
 parser = argparse.ArgumentParser()
 
@@ -128,3 +128,6 @@ if __name__ == '__main__':
         for pack in packs:
             image, gt, path = pack["image"], pack["gt"], pack['path']
             print(f'img_size: {image.size()}, gt_size: {gt.size()}, path: {path}')
+
+            img = TF.to_pil_image(gt.squeeze(0))
+            img.show()

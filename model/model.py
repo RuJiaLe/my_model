@@ -26,21 +26,6 @@ class Encoder_Model(nn.Module):
 
         self.attention_module = TripletAttention()
 
-        if pretrained:
-            for key in self.state_dict():
-                if 'resnet' not in key:
-                    self.init_layer(key)
-
-    def init_layer(self, key):
-        if key.split('.')[-1] == 'weight':
-            if 'conv' in key:
-                if self.state_dict()[key].ndimension() >= 2:
-                    nn.init.kaiming_normal_(self.state_dict()[key], mode='fan_out', nonlinearity='relu')
-            elif 'bn' in key:
-                self.state_dict()[key][...] = 1
-        elif key.split('.')[-1] == 'bias':
-            self.state_dict()[key][...] = 0.001
-
     def forward(self, x):  # (1, 3, 256, 256)
         block0 = self.conv1(x)  # (1, 64, 256, 256)
         block0 = self.bn1(block0)
@@ -75,6 +60,10 @@ class Encoder_Model(nn.Module):
 class Model(nn.Module):
     def __init__(self, in_channels=3, pretrained=True):
         super(Model, self).__init__()
+        if pretrained:
+            for key in self.state_dict():
+                if 'resnet' not in key:
+                    self.init_layer(key)
         # --------------------编码阶段--------------------
         self.encoder = Encoder_Model(output_stride=16, input_channels=in_channels, pretrained=pretrained)
 
@@ -82,7 +71,7 @@ class Model(nn.Module):
 
         self.decoder4 = Video_Decoder_Part(2048, 1024)
 
-        self.ConvGRU4 = ConvGRUCell(1024, 1024)
+        # self.ConvGRU4 = ConvGRUCell(1024, 1024)
 
         # --------------------第三解码阶段--------------------
 
@@ -90,7 +79,7 @@ class Model(nn.Module):
 
         self.decoder3 = Video_Decoder_Part(1024, 512)
 
-        self.ConvGRU3 = ConvGRUCell(512, 512)
+        # self.ConvGRU3 = ConvGRUCell(512, 512)
 
         # --------------------第二解码阶段--------------------
         self.CBR2 = CBR(1024, 512)
@@ -108,7 +97,7 @@ class Model(nn.Module):
 
         # --------------------refine--------------------
         self.refine = refine_module(1, 1)
-
+        self.ConvGRU0 = ConvGRUCell(1, 1, kernel_size=3)
         # --------------------output阶段--------------------
         self.CBS4 = CBS(1024, 1)
 
@@ -123,6 +112,16 @@ class Model(nn.Module):
         self.Up_sample_8 = nn.Upsample(scale_factor=8, mode='bilinear')
         self.Up_sample_4 = nn.Upsample(scale_factor=4, mode='bilinear')
         self.Up_sample_2 = nn.Upsample(scale_factor=2, mode='bilinear')
+
+    def init_layer(self, key):
+        if key.split('.')[-1] == 'weight':
+            if 'conv' in key:
+                if self.state_dict()[key].ndimension() >= 2:
+                    nn.init.kaiming_normal_(self.state_dict()[key], mode='fan_out', nonlinearity='relu')
+            elif 'bn' in key:
+                self.state_dict()[key][...] = 1
+        elif key.split('.')[-1] == 'bias':
+            self.state_dict()[key][...] = 0.001
 
     # freeze_bn
     def freeze_bn(self):
@@ -143,17 +142,19 @@ class Model(nn.Module):
             x = self.decoder4(blocks[i][3])
             x4.append(x)
 
-        out4 = [None]
-        for i in range(len(frames)):
-            out = self.ConvGRU4(x4[i], out4[i])
-            out4.append(out)
+        # out4 = [None]
+        # for i in range(len(frames)):
+        #     out = self.ConvGRU4(x4[i], out4[i])
+        #     out4.append(out)
+        #
+        # out4 = out4[1:]
 
-        out4 = out4[1:]
+        out4 = x4
 
         # --------------------第三解码阶段--------------------
         x3 = []
         for i in range(len(frames)):
-            x = torch.cat((x4[i], blocks[i][2]), dim=1)
+            x = torch.cat((out4[i], blocks[i][2]), dim=1)
             x = self.CBR3(x)
             x = self.decoder3(x)
             x3.append(x)
@@ -165,20 +166,24 @@ class Model(nn.Module):
 
         out3 = out3[1:]
 
+        # out3 = x3
+
         # --------------------第二解码阶段--------------------
         x2 = []
         for i in range(len(frames)):
-            x = torch.cat((x3[i], blocks[i][1]), dim=1)
+            x = torch.cat((out3[i], blocks[i][1]), dim=1)
             x = self.CBR2(x)
             x = self.decoder2(x)
             x2.append(x)
 
-        out2 = [None]
-        for i in range(len(frames)):
-            out = self.ConvGRU2(x2[i], out2[i])
-            out2.append(out)
+        # out2 = [None]
+        # for i in range(len(frames)):
+        #     out = self.ConvGRU2(x2[i], out2[i])
+        #     out2.append(out)
+        #
+        # out2 = out2[1:]
 
-        out2 = out2[1:]
+        out2 = x2
 
         # --------------------第一解码阶段--------------------
         x1 = []
@@ -194,6 +199,8 @@ class Model(nn.Module):
             out1.append(out)
 
         out1 = out1[1:]
+
+        # out1 = x1
 
         # --------------------输出阶段--------------------
         output4 = []
@@ -217,8 +224,17 @@ class Model(nn.Module):
             output1.append(out)
 
         # --------------------refine--------------------
+        out0 = [None]
+        for i in range(len(frames)):
+            out = self.ConvGRU0(output1[i], out0[i])
+            out0.append(out)
+
+        out0 = out0[1:]
+
         output0 = []
         for i in range(len(frames)):
-            output0.append(self.refine(output1[i]))
+            output0.append(self.refine(out0[i]))
 
         return output4, output3, output2, output1, output0
+
+        # return output4, output3, output2, output1

@@ -2,13 +2,14 @@ import os
 
 import torch
 import time
-from torch.autograd import Variable
 from .Other_material import Eval_mae, Eval_F_measure, Eval_S_measure
 import logging
 from datetime import datetime
-from Loss import multi_bce_loss_fusion
+from Loss import multi_loss
 import torch.optim as optim
 from .Other_material import adjust_lr
+from tqdm import tqdm
+import time
 
 # best_val_loss
 best_val_loss = 0.0
@@ -17,32 +18,28 @@ best_val_loss = 0.0
 # val
 def val(val_dataloader, model, batch_size):
     model.eval()
-
-    total_num = len(val_dataloader) * 4 * batch_size
     MAES, S_measures = 0.0, 0.0
     img_num = 0
     avg_p, avg_r = 0.0, 0.0
 
     with torch.no_grad():
         start_time = time.time()
-        for i, packs in enumerate(val_dataloader):
+        for packs in tqdm(val_dataloader):
             images, gts = [], []
             for pack in packs:
                 image, gt = pack["image"], pack["gt"]
 
                 if torch.cuda.is_available():
-                    image, gt = Variable(image.cuda(), requires_grad=False), Variable(gt.cuda(), requires_grad=False)
-                else:
-                    image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
+                    image, gt = image.cuda(), gt.cuda()
 
                 images.append(image)
                 gts.append(gt)
 
             # 解码
-            out4, out3, out2, ou1, out0 = model(images)
+            out = model(images)
 
             # Loss 计算
-            predicts = out0
+            predicts = out[-1]
 
             for predict_, gt_ in (zip(predicts, gts)):
                 for k in range(batch_size):
@@ -59,10 +56,6 @@ def val(val_dataloader, model, batch_size):
 
                     S_measure = Eval_S_measure(predict, gt)
                     S_measures += S_measure.data
-
-            if img_num % 200 == 0:
-                print('#val# Done: {:0.2f}%, img: {}/{}, mae: {:0.4f}, S_measure: {:0.4f}'.
-                      format((img_num / total_num) * 100, img_num, total_num, MAES / img_num, S_measures / img_num))
 
         avg_mae = MAES / img_num
 
@@ -102,10 +95,11 @@ def train(train_data, val_data, model, optimizer, Epoch, total_epoch, model_path
 
     total_step = len(train_data)
     losses = 0.0
+    already_time = 0.0
 
     for i, packs in enumerate(train_data):
+        start_time = time.time()
         i = i + 1
-
         optimizer.zero_grad()
 
         images, gts = [], []
@@ -113,33 +107,32 @@ def train(train_data, val_data, model, optimizer, Epoch, total_epoch, model_path
             image, gt = pack["image"], pack["gt"]
 
             if torch.cuda.is_available():
-                image, gt = Variable(image.cuda(), requires_grad=False), Variable(gt.cuda(), requires_grad=False)
-            else:
-                image, gt = Variable(image, requires_grad=False), Variable(gt, requires_grad=False)
+                image, gt = image.cuda(), gt.cuda()
 
             images.append(image)
             gts.append(gt)
 
         # 解码
-        out4, out3, out2, out1, out0 = model(images)  # 第4阶段, 第3阶段, 第2阶段, 第1阶段, 第0阶段
+        out = model(images)  # 第4阶段, 第3阶段, 第2阶段, 第1阶段, 第0阶段
 
         # Loss 计算
-        loss = []
-        frame1_loss, frame2_loss, frame3_loss, frame4_loss = multi_bce_loss_fusion(out4, out3, out2, out1, out0, gts)
-        loss = [frame1_loss, frame2_loss, frame3_loss, frame4_loss]
-        losses = losses + frame1_loss.data + frame2_loss.data + frame3_loss.data + frame4_loss.data
+        loss = multi_loss(out, gts)
+        for loss_ in loss:
+            losses += loss_.data
 
         # 反向传播
         torch.autograd.backward(loss)
-
         optimizer.step()
 
+        end_time = time.time()
+        speed = end_time - start_time
+        already_time += speed
         # 显示与记录内容
-        if i % 10 == 0 or i == total_step:
-            print('#Train# {}, Epoch: [{}/{}], Done: {:0.2f}%, Step: [{}/{}], Loss: {:0.4f}'.
+        if i % 1 == 0 or i == total_step:
+            print('#Train# {}, Epoch: [{}/{}], Done: {:0.2f}%, Step: [{}/{}], Loss: {:0.4f}, speed: {:0.2f}s, already_time: {:0.2f} min, need_time: {:0.2f} min'.
                   format(datetime.now().strftime('%m/%d %H:%M'),
                          Epoch, total_epoch, (i / total_step) * 100, i,
-                         total_step, losses / (i * 4)))
+                         total_step, losses / (i * 4), speed, already_time / 60.0, (total_step - i) * speed / 60.0))
 
         if i % 100 == 0 or i == total_step:
             logging.info('#Train# {}, Epoch: [{}/{}], Done: {:0.2f}%, Step: [{}/{}], Loss: {:0.4f}'.
@@ -185,11 +178,12 @@ def start_train(train_dataloader, val_dataloader, model, total_epoch,
     # 加载模型
     if os.path.exists(model_path):
         checkpoint = torch.load(model_path, map_location=torch.device(device))
-        start_epoch = checkpoint['epoch']
+        model.load_state_dict(checkpoint["state_dict"])
 
         global best_val_loss
+        start_epoch = checkpoint['epoch']
+        start_epoch = start_epoch + 1
         best_val_loss = checkpoint['best_val_loss']
-        model.load_state_dict(checkpoint["state_dict"])
         if "optimizer" in checkpoint:
             optimizer.load_state_dict(checkpoint["optimizer"])
 
